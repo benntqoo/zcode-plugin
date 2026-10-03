@@ -30,29 +30,31 @@ export function normPath(p) {
 }
 
 /**
- * 从 start 向上找项目根：优先最近的 `.git`，其次最近的 `.zcode`。
- * 两者都找不到则回退 start 本身。
+ * 从 start 向上找项目根：**最近的标记获胜**，`.git` 与 `.zcode` 同等权重。
+ * 同一个目录里两者都有时无所谓谁先 —— 反正都返回该目录。
+ * 一个都找不到则回退 start 本身。
+ *
+ * 为什么是「就近」而不是「`.git` 绝对优先」：ZCode 自己的发现顺序里，
+ * 越深的工作区 `.zcode/skills` 优先级越高。若让高位的 `.git` 越过低位自带的
+ * `.zcode`，算出的落点就会跟 ZCode 实际读取的位置不一致 —— 文件写了却不生效。
  */
 export function findProjectRoot(start) {
   let dir = resolve(start);
-  let byZcode = null;
   for (let i = 0; i < MAX_UP; i++) {
-    if (existsSync(join(dir, ".git"))) return dir;
-    if (!byZcode && existsSync(join(dir, ".zcode"))) byZcode = dir;
+    if (existsSync(join(dir, ".git")) || existsSync(join(dir, ".zcode"))) return dir;
     const parent = dirname(dir);
     if (parent === dir) break;
     dir = parent;
   }
-  return byZcode || resolve(start);
+  return resolve(start);
 }
 
 /**
  * 算出本次会话应当使用的 skill 落点。
  *
  * @param {string} cwd 钩子 payload 里的 cwd（可空，回退 process.cwd()）
- * @returns {{root: string, skillsDir: string, relPath: string, isUserLevel: boolean}}
+ * @returns {{root: string, skillsDir: string, isUserLevel: boolean}}
  *   skillsDir   绝对路径，写文件用这个
- *   relPath     形如 `<repo>/.zcode/skills/<name>/SKILL.md`，给人看用
  *   isUserLevel true 表示落点与用户级目录重合（cwd 在 home）——调用方应放弃推送
  */
 export function resolveSkillTarget(cwd) {
@@ -67,7 +69,6 @@ export function resolveSkillTarget(cwd) {
   return {
     root,
     skillsDir,
-    relPath: "<repo>/.zcode/skills/<name>/SKILL.md",
     isUserLevel: isHome || collides,
   };
 }

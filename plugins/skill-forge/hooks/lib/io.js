@@ -12,6 +12,8 @@
 //
 // 原则：任何异常都不应阻塞主会话 —— 解析失败/输出失败一律静默 exit 0。
 
+import { writeSync } from "fs";
+
 /**
  * 异步读取 stdin（Windows 管道必需）。失败返回 {}。
  *
@@ -78,7 +80,11 @@ export function emitBlockStop(reason) {
 
 function write(obj) {
   try {
-    process.stdout.write(JSON.stringify(obj));
+    // 用 writeSync(1, ...) 而不是 process.stdout.write + process.exit：
+    // 管道上的 stdout 写入在 Node 里是异步的，紧跟一个 process.exit(0)
+    // 理论上会在数据刷出前终止进程（Windows 尤甚）。同步写 fd 1 写完了才返回，
+    // 之后 exit 就是安全的。
+    writeSync(1, JSON.stringify(obj));
   } catch {
     // 输出失败也不阻塞会话。
   }

@@ -73,10 +73,14 @@ const dataDir =
   process.env.ZCODE_PLUGIN_DATA || process.env.CLAUDE_PLUGIN_DATA || join(tmpdir(), "skill-forge");
 const statePath = join(dataDir, "nudge-state.json");
 
+// 状态文件只增不减会长大 —— 只保留最近这么多个会话
+const MAX_TRACKED = 200;
+
 let state = {};
 try {
   if (existsSync(statePath)) {
-    state = JSON.parse(readFileSync(statePath, "utf-8")) || {};
+    const parsed = JSON.parse(readFileSync(statePath, "utf-8"));
+    state = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
   }
 } catch {
   state = {};
@@ -88,6 +92,13 @@ if ((state[sessionId] || 0) >= 1) {
 
 // 记账（先写再输出，避免写失败导致重复推送）
 state[sessionId] = (state[sessionId] || 0) + 1;
+
+// 剪枝：对象键保持插入序，所以砍头部就是砍最老的会话
+const tracked = Object.keys(state);
+if (tracked.length > MAX_TRACKED) {
+  for (const k of tracked.slice(0, tracked.length - MAX_TRACKED)) delete state[k];
+}
+
 try {
   mkdirSync(dirname(statePath), { recursive: true });
   writeFileSync(statePath, JSON.stringify(state), "utf-8");
@@ -103,7 +114,7 @@ emitBlockStop(
     "",
     "A. 有可复用的做法 → 写入 `" + skillsDirForMsg + "/<kebab-name>/SKILL.md`，",
     "   这是**本项目**的 skill 目录。不要写 `~/.zcode/skills/` —— 那是全局库，会污染所有项目。",
-    "   frontmatter 只写 name / description / when_to_use / metadata。",
+    "   frontmatter 只写 name / description / when_to_use / license / metadata。",
     "   description 写清「什么时候用」（250 字符截断后注入上下文，触发条件放最前面）。",
     "   写完一句话报路径。",
     "",

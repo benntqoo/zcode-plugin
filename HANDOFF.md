@@ -1,12 +1,14 @@
 # HANDOFF — skill-forge 插件
 
-> 更新：2026-10-04 01:15
-> 状态：**v1.1.0 已安装启用；skill 落点已从全局改为「项目级」（本次变更）**
+> 更新：2026-10-04 03:30
+> 状态：**源码已在 v1.1.1，待 GUI 重装；线上生效的是 v1.1.0**
 > 新会话直接从这里接。
 
-**最新变更（2026-10-04）**：原本 skill 一律写进全局库 `~/.zcode/skills/`。
-现改为写入**当前项目**的 `<repo>/.zcode/skills/`，并新增 `hooks/lib/project.js` 做路径解析。
-详见表「八、落点为何是项目级」。
+**最新变更（2026-10-04）**：
+
+- **v1.1.0**：skill 落点从全局库 `~/.zcode/skills/` 改为**当前项目**的 `<repo>/.zcode/skills/`，
+  新增 `hooks/lib/project.js` 做路径解析。详见「八、落点为何是项目级」。
+- **v1.1.1**：一次「已装已用」状态审计后的修补（4 项），详见「九、v1.1.1 改了什么」。
 
 ---
 
@@ -57,6 +59,8 @@ D:\Code\zcode-plugin\                   ← ZCode「Add marketplace」指向这�
 | git 仓库 | ✅ 远端 `git@github.com:benntqoo/zcode-plugin.git`（main） |
 | GUI 安装 | ✅ 市场已注册、插件已启用（实测确认） |
 | **落点改项目级** | ✅ v1.1.0 —— 6 处路径全改 + 新增 `hooks/lib/project.js` |
+| **v1.1.1 四项修补** | ✅ 源码已改（io.js / project.js / stop-skill-nudge.js / skill-forge.md），待重装 |
+| **「已装已用」状态审计** | ✅ 2026-10-04 —— 见「九」 |
 | 语法检查（4 个 js） | ✅ `node --check` 全过 |
 | 冒烟测试 | ✅ 9 组场景全过（见下） |
 | `~/.zcode/AGENTS.md` | ✅ 三铁律已加，落点已改为项目级 |
@@ -104,8 +108,16 @@ D:\Code\zcode-plugin\                   ← ZCode「Add marketplace」指向这�
 1. ~~添加市场~~ ✅ 已完成（`known_marketplaces.json` 里有 `zcode-plugin`，源 `D:\Code\zcode-plugin`）
 2. ~~安装插件~~ ✅ 已完成（`cli/config.json` → `"skill-forge@zcode-plugin": true`）
 
-3. **重装到 v1.1.0** ← **当前唯一待办（GUI）**
-   本地目录市场**不会自动感知文件变化**。本次改了钩子与命令 + bump 到 1.1.0，
+3. ~~**重装到 v1.1.0**~~ ✅ **已完成（2026-10-04 核对）**
+   实测：`installed_plugins.json` → `version: "1.1.0"`；安装缓存与仓库源码 `diff -r` **零差异**；
+   市场缓存副本 `~/.zcode/cli/plugins/marketplaces/zcode-plugin/` 亦一致。
+   启动日志 `bootstrap.app.startup.plugins.completed` 给出 `hookCount: 0 → 2`、
+   `commandRootCount: 0 → 1`（装插件前后对比）—— 钩子确实挂上了。
+
+4. **重装到 v1.1.1** ← **当前唯一待办（GUI）**
+   本地目录市场**不会自动感知文件变化**。v1.1.1 改动了
+   `hooks/lib/io.js`、`hooks/lib/project.js`、`hooks/stop-skill-nudge.js`、`commands/skill-forge.md`，
+   并 bump 到 1.1.1。
    需要在 `Settings → Plugins → Installed` 里对 `skill-forge` 执行更新/重装。
    缓存路径参考：`~/.zcode/cli/plugins/cache/zcode-plugin/skill-forge/<version>/`
 
@@ -186,7 +198,9 @@ D:\Code\zcode-plugin\                   ← ZCode「Add marketplace」指向这�
 ### 实现
 
 - 新增 `hooks/lib/project.js` → `resolveSkillTarget(cwd)`
-  - `findProjectRoot()`：就近找 `.git`，其次 `.zcode`，都没有则回退 cwd（最多向上 40 层）
+  - `findProjectRoot()`：从 cwd 向上找**最近的** `.git` 或 `.zcode`（同等权重，先撞上谁算谁），
+    都没有则回退 cwd（最多向上 40 层）。v1.1.1 前是「`.git` 绝对优先」，会让高位的 `.git`
+    越过低位自带的 `.zcode`，算出的落点与 ZCode 实际读取的位置不一致 —— 已改为就近优先。
   - 返回 `{ root, skillsDir, isUserLevel }`
 - `isUserLevel = true` 的两种情况：`root` 就是 home，或解析出的 `skillsDir` 与 `~/.zcode/skills` 路径重合
   → **Stop 钩子直接放行**，SessionStart 退回用户级路径
@@ -201,3 +215,50 @@ D:\Code\zcode-plugin\                   ← ZCode「Add marketplace」指向这�
 | 产出的 SKILL.md | `<repo>/.zcode/skills/<name>/` | 只有当前项目 |
 
 头头选的组合是「规则全局、落点项目」，不是「全都项目级」。
+
+---
+
+## 九、v1.1.1 改了什么（2026-10-04 审计后）
+
+审计范围：插件源码、安装缓存、市场缓存、启动日志、真实产出（stock-agent 的两个 skill）。
+**结论：无 P0 缺陷** —— 线上 v1.1.0 一直正常工作。以下 4 项是审计中发现的真实问题。
+
+| # | 问题 | 证据 | 改法 |
+|---|---|---|---|
+| 1 | `/skill-forge` 用相对路径 `ls .zcode/skills/` | 从子目录触发时会打印「本项目还没有 skill 目录」，把模型推向**新建重复 skill**，正好撞上同文件「已有覆盖就改不要新建」 | 改成 `git rev-parse --show-toplevel` 后列 `$ROOT/.zcode/skills/` |
+| 2 | frontmatter 白名单三处不一致 | `AGENTS.md` 与 `session-skill-rules.js` 列 5 字段，`stop-skill-nudge.js` 只列 4（漏 `license`） | 补齐 `license` |
+| 3 | `nudge-state.json` 只增不减 | key = session_id，无上限，每次 Stop 全量读+写 | 保留最近 200 个会话，写入前剪枝 |
+| 4 | `process.stdout.write` 后立刻 `process.exit(0)` | Windows 管道写是异步的，理论可截断（实测 5 次全 898 字节完整，**未复现**） | 换 `fs.writeSync(1, json)` |
+
+另两处清理：`project.js` 的死字段 `relPath` 已删；`findProjectRoot` 的注释与实现对齐（见「八」）。
+
+### 审计中已验证为真的事实（可复用）
+
+- **怎么证明插件真生效**（别翻设置页）：
+
+  ```bash
+  grep "bootstrap.app.startup.plugins.completed" ~/.zcode/cli/log/zcode-$(date +%F).jsonl | tail -1
+  ```
+
+  `hookCount` 是全局钩子注册数（装前 0 → 装后 2）；`commandRootCount` 同理。
+  `skillRootCount` 是**根**数不是条目数，别拿它对账 skill 数量。
+- 插件数据目录：`~/.zcode/cli/plugins/data/skill-forge@zcode-plugin/`（钩子内由环境变量给出，
+  实测 `ZCODE_PLUGIN_DATA` 可用）。真实触发过一次：`nudge-state.json` = `{"sess_5256dc5c-…":1}`。
+- 安装记录：`~/.zcode/cli/plugins/installed_plugins.json`（version / installPath / scope）。
+- 市场缓存 `marketplaces/<id>/` 是仓库的**副本**（自带 `.git`），不是软链。
+- 4 个 js `node --check` 全过；钩子实测耗时 435ms（timeout 8000ms）。
+- 落点解析 9 个 cwd 场景全对（home 保护 / 子目录上溯 / UNC / 不存在的路径）。
+- 产出合规：stock-agent 两个 skill 的 `description` 分别 146 / 163 字符，
+  字段为 `name/description/when_to_use/metadata`。
+
+### 未验证 / 待确认
+
+- **Stop 上挂着两个钩子**：用户级 `~/.zcode/hooks/stop-memory.js` 输出 `additionalContext`，
+  本插件输出 `decision:block`。官方文档没说多钩子的输出如何合并。**未做对照实验** ——
+  想确认就临时停掉一个，各跑一次对比。
+
+### 相邻发现（不是本插件，但同一个 Stop 事件）
+
+`~/.zcode/hooks/memory-candidates.jsonl`：**275 条 / 249 KB**（2026-08-05 → 10-03）。
+全盘搜索只有生产者 `stop-memory.js` 引用它自己 —— **没有消费者**，每次 Stop 都在 append。
+按项目分：stock-agent 238、Lumi 19。建议先抽样 20 条看质量再决定，**别直接删**。

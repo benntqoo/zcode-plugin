@@ -15,9 +15,12 @@ argument-hint: "[可选: skill 名(kebab-case)]"
 2. **确定边界。** 先列出现有 skill：
 
    ```bash
-   ls .zcode/skills/ 2>/dev/null || echo "(本项目还没有 skill 目录)"
+   ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+   ls "$ROOT/.zcode/skills/" 2>/dev/null || echo "(本项目还没有 skill 目录)"
    ```
 
+   ⚠️ 必须先解析到**仓库根**再列 —— 从子目录触发时 `.zcode/skills/` 相对路径会落空，
+   于是误判成「本项目还没有 skill」，接着就会新建一个和已有 skill 重复的东西。
    若已有 skill 覆盖同一主题 → **改那个，不要新建**。metadata 预算有限，重叠会拉低自动触发率。
 
    ⚠️ 落点是**本项目**的 `.zcode/skills/`，不是全局 `~/.zcode/skills/`。
