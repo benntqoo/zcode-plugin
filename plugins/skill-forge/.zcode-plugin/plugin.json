@@ -1,0 +1,17 @@
+{
+  "name": "skill-forge",
+  "version": "1.0.0",
+  "description": "Auto-distill reusable skills after multi-step tasks, and keep the skill library fresh and within budget.",
+  "author": {
+    "name": "Ben"
+  },
+  "license": "MIT",
+  "keywords": [
+    "skill",
+    "memory",
+    "workflow",
+    "self-improvement"
+  ],
+  "commands": "commands",
+  "hooks": "./hooks/hooks.json"
+}

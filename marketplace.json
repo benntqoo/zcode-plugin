@@ -1,0 +1,16 @@
+{
+  "name": "zcode-plugin",
+  "description": "Personal ZCode plugin marketplace.",
+  "owner": {
+    "name": "Ben"
+  },
+  "plugins": [
+    {
+      "name": "skill-forge",
+      "version": "1.0.0",
+      "description": "Auto-distill reusable skills after multi-step tasks, and keep the skill library fresh and within budget.",
+      "source": "./plugins/skill-forge",
+      "category": "productivity"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "description": "skill-forge hooks: re-inject distillation rules after compaction, and nudge once per session when a task deserved a skill but got none.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "compact|clear",
+        "hooks": [
+          {
+            "type": "process",
+            "command": "node",
+            "args": ["${ZCODE_PLUGIN_ROOT}/hooks/session-skill-rules.js"],
+            "timeoutMs": 5000
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "process",
+            "command": "node",
+            "args": ["${ZCODE_PLUGIN_ROOT}/hooks/stop-skill-nudge.js"],
+            "timeoutMs": 8000
+          }
+        ]
+      }
+    ]
+  }
+}
