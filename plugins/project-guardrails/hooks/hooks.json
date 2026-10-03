@@ -1,0 +1,30 @@
+{
+  "description": "project-guardrails hooks: inject <repo>/.zcode/guardrails.json context on SessionStart, enforce its tool rules on PreToolUse. matcher is intentionally omitted on PreToolUse so rules can target any tool; the script exits immediately when no rules file exists.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "process",
+            "command": "node",
+            "args": ["${ZCODE_PLUGIN_ROOT}/hooks/session-rules.mjs"],
+            "timeoutMs": 5000
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "process",
+            "command": "node",
+            "args": ["${ZCODE_PLUGIN_ROOT}/hooks/pretooluse-guard.mjs"],
+            "timeoutMs": 5000
+          }
+        ]
+      }
+    ]
+  }
+}

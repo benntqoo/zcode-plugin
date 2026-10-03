@@ -1,0 +1,17 @@
+{
+  "name": "project-guardrails",
+  "version": "1.0.0",
+  "description": "Per-project guardrails that work around ZCode ignoring workspace-scoped hooks: declare constraints and tool rules in <repo>/.zcode/guardrails.json and have a user-level plugin enforce them.",
+  "author": {
+    "name": "Jrtou"
+  },
+  "license": "MIT",
+  "keywords": [
+    "hooks",
+    "guardrails",
+    "safety",
+    "project-config"
+  ],
+  "commands": "commands",
+  "hooks": "./hooks/hooks.json"
+}
