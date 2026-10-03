@@ -1,8 +1,11 @@
-# HANDOFF — skill-forge 插件
+# HANDOFF — zcode-plugin 市场
 
-> 更新：2026-10-04 04:05
-> 状态：**源码已在 v1.1.2，待 GUI 重装；线上生效的是 v1.1.0**
+> 更新：2026-10-04 04:45
+> 状态：仓库共 **3** 个插件。`skill-forge` 已装 1.1.2 并已生效；
+> **`memory-loop` 与 `project-guardrails` 为新建（各 1.0.0），尚未安装到 ZCode。**
 > 新会话直接从这里接。
+>
+> 第一 ~ 十节是 `skill-forge` 的交接笔记。新插件见「十一」。
 
 **最新变更（2026-10-04）**：
 
@@ -10,6 +13,8 @@
   新增 `hooks/lib/project.js` 做路径解析。详见「八、落点为何是项目级」。
 - **v1.1.1**：一次「已装已用」状态审计后的修补（4 项），详见「九、v1.1.1 改了什么」。
 - **v1.1.2**：仓库身份统一为 `Jrtou` + 补 `LICENSE`，详见「十、v1.1.2 改了什么」。
+- **新增两个插件**：`memory-loop`（记忆闭环消费者）与 `project-guardrails`（项目级约束），
+  各 1.0.0。详见「十一」。
 
 ---
 
@@ -291,3 +296,89 @@ D:\Code\zcode-plugin\                   ← ZCode「Add marketplace」指向这�
 「同一个 1.1.1 有两份不同内容」的历史。
 
 署名口径：**统一用 `Jrtou`**（git 提交者 `Jrtou <benntqoo@gmail.com>`），不再混用 `Ben`。
+
+---
+
+## 十一、memory-loop 与 project-guardrails（2026-10-04 新建）
+
+来自 `docs/analysis/zcode-capability-gaps.md` §4 选题清单里头头选中的 #2 / #3。
+动手前先做了一轮**源码级前置验证**，结果推翻了那份文档附录里的两条「未验证」。
+
+### 前置验证结论（已改写进根 README 与技能库）
+
+| 项 | 结论 |
+|---|---|
+| `async: true` 语义 | 源码 `E0n()`：`executionMode: type==="command" && async===!0 ? "background" : "foreground"`。⇒ **只对 `type:"command"` 生效，语义是「丢到后台执行」，不是「延后注入上下文」**；`process` 型根本没有这个字段 |
+| 多钩子合并 | 源码 `_Qs()`：`additionalContext` 是 **`push` 累积、不覆盖**；`permissionDecision` 覆盖式，最终归并 `deny > ask > 其它`。**（原文档标「未验证」，现已确认）** |
+| `hookSpecificOutput` | 实为 **7 个分支、每事件一个**；能影响工具调用的**只有 `PreToolUse` 与 `PermissionRequest`**。**（原文档说「只确认 3 个」，是错的）** |
+| 项目级配置 | `<repo>/.zcode/config.json` 支持 `plugins.options`，且 **workspace 覆盖 user**（与 MCP 的 user-over-workspace 方向相反） |
+| 用户已有 4 个用户级钩子 | `guard-bash`(PreToolUse) / `session-context`(SessionStart) / `prompt-router`(UserPromptSubmit) / `stop-memory`(Stop)，注册在 `~/.zcode/cli/config.json`。⇒ **直接决定了两个新插件的定位** |
+
+### 口径（头头选定的三条，均为推荐项）
+
+1. **#2 记忆落点 = 项目内独立文件** `<repo>/.zcode/memory/MEMORY.md`，由 SessionStart 钩子注入。
+   不写 `AGENTS.md`（会污染、膨胀不可控），也不写 ZCode 原生 memory（`features.memory.enabled`
+   默认 false，且无消费者）。
+2. **#3 与全局 `guard-bash` = 项目级增量规则**，全局那份保留兜底，两者并存。
+3. **两个插件分开打包**，各自可独立启停。
+
+### memory-loop（1.0.0）
+
+补上记忆链路的**消费者** —— 上游 `stop-memory.js` 只写不读，已积压 276 条 / 256 KB。
+
+| 文件 | 作用 |
+|---|---|
+| `hooks/ingest-candidates.mjs` | `Stop`。读源 jsonl 增量 → 按候选的 `cwd` 解析项目根 → 写 `<repo>/.zcode/memory/candidates.jsonl`，内容指纹去重。**纯副作用，不注入任何上下文** |
+| `hooks/recall-memory.mjs` | `SessionStart`。注入 `MEMORY.md`（上限 4000 字符，超出截断）+ 一句未蒸馏提示 |
+| `commands/memory-loop.md` | 手动蒸馏：读候选 → 判断值得留的 → 整理进 `MEMORY.md` → 推进游标 |
+
+**关键设计：蒸馏故意不自动化。** 脚本判断不了「这条值不值得记」，把语义判断写死成启发式只会产噪音。
+机械部分（分流 / 去重 / 注入）全自动，语义部分（蒸馏）由 `/memory-loop` 触发。
+
+数据落点全在项目内（可 review、可进 git）：`candidates.jsonl` / `MEMORY.md` / `state.json`。
+唯一的例外是消费游标 `ingest-state.json`，放插件数据目录 —— **重装会清空它，这是设计允许的**：
+丢了只需重扫，项目侧的指纹去重会兜住。
+
+### project-guardrails（1.0.0）
+
+补上「**工作区级 hooks 被整体忽略**」造成的缺口 —— 用**用户级**插件代理读取项目声明文件。
+
+| 文件 | 作用 |
+|---|---|
+| `hooks/session-rules.mjs` | `SessionStart`。注入 `.zcode/guardrails.json` 的 `context[]` |
+| `hooks/pretooluse-guard.mjs` | `PreToolUse`（**matcher 故意省略** = 全匹配）。按 `rules[]` 返回 deny / ask |
+| `commands/guardrails.md` | `init` / `check` / 自然语言加规则 |
+
+**关键设计：fail-open。** 配置读不到 / 坏了就放行 —— 它是用户自己写的项目配置，**不是安全边界**，
+不能因为它写错就把会话卡死。坏正则逐条忽略，不影响同文件其它规则。
+`PreToolUse` 省略 matcher 换来通用性，代价是每次工具调用一次进程启动 —— 所以脚本第一件事是
+「没有规则文件就立刻退出」。
+
+### 测试
+
+`_probe.sh`（**纯 bash 驱动** —— 沙箱会拦脚本内部嵌套 spawn 子进程）→ **35 / 35 全过**：
+
+- **ingest**：分流（含反斜杠 cwd 归一化）、游标增量、重复触发幂等、游标丢失后指纹去重兜底，
+  以及非 Stop / `stop_hook_active` / home / 源文件缺失 四道闸门
+- **recall**：无记忆不注入、正常注入、未蒸馏提示、蒸馏后不再提示、超长截断、home、错事件
+- **guardrails**：无文件不介入、context 注入、deny / ask / 放行、`tool` 限定、非 Bash 工具匹配、
+  camelCase payload、坏 JSON fail-open、只有 `context` 无 `rules`
+
+耗时：前台钩子各约 **85 ms**（node 启动占大头），远低于 `timeoutMs`。
+
+> 测试脚本自身踩过一次坑：断言用的 payload 文件在断言**之后**才创建，导致「空跑通过」。
+> 已在 `run()` 里加了 payload / 钩子的存在性自检，缺文件直接判 FAIL。**同类问题以后要防。**
+
+### 未验证（别当结论）
+
+- **两个插件都没有在真实会话里跑过。** 全部证据来自对脚本的直接调用；
+  「ZCode 真的会在每轮 Stop / 每次工具调用时调它们」这一步**没有实测**。
+- `userConfig` 虽属 runnable 档，但**它的值以什么形式进入钩子进程未验证**（env 名？`${}` 替换？）。
+  所以两个插件**都没用 userConfig**，改用环境变量 + 项目内约定文件，绕开这个未知。
+- `PreToolUse` 全量 matcher 的**真实性能影响未测**（只有单次 85 ms 这个数字）。
+
+### 待办
+
+1. 在市场里 Install 这两个插件 → **开新会话**。
+2. 装完读日志核对 `hookCount`（应先从 `2` 增加 —— 新增 4 个钩子条目；确切口径待实测）。
+3. 首次实战观察：跑过一轮后，`<repo>/.zcode/memory/candidates.jsonl` 是否被创建。

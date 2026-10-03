@@ -11,6 +11,20 @@
       "description": "Auto-distill reusable skills after multi-step tasks, and keep the skill library fresh and within budget.",
       "source": "./plugins/skill-forge",
       "category": "productivity"
+    },
+    {
+      "name": "memory-loop",
+      "version": "1.0.0",
+      "description": "Close the memory loop: consume hook-written memory candidates, split them per project, and re-inject distilled memory at session start.",
+      "source": "./plugins/memory-loop",
+      "category": "productivity"
+    },
+    {
+      "name": "project-guardrails",
+      "version": "1.0.0",
+      "description": "Per-project guardrails that work around ZCode ignoring workspace-scoped hooks: declare constraints and tool rules in <repo>/.zcode/guardrails.json and have a user-level plugin enforce them.",
+      "source": "./plugins/project-guardrails",
+      "category": "productivity"
     }
   ]
 }

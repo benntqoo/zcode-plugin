@@ -2,7 +2,10 @@
 
 个人 **ZCode 插件市场**仓库（marketplace id: `zcode-plugin`）。仓库根本身就是市场源 —— ZCode 的「Add marketplace → 本地目录」指向这个目录。
 
-- 当前收录：**1** 个插件 —— [`skill-forge`](plugins/skill-forge/README.md)
+- 当前收录：**3** 个插件
+  - [`skill-forge`](plugins/skill-forge/README.md) —— 多步任务后沉淀可复用 skill
+  - [`memory-loop`](plugins/memory-loop/README.md) —— 闭合记忆回路：候选分流 → 蒸馏 → 会话注入
+  - [`project-guardrails`](plugins/project-guardrails/README.md) —— 补齐「工作区 hooks 不执行」留下的项目级约束缺口
 - 远端：`git@github.com:benntqoo/zcode-plugin.git`（`main`）
 
 ## 安装
@@ -21,8 +24,16 @@
 | 插件 | 版本 | 作用 | 文档 |
 |---|---|---|---|
 | `skill-forge` | 1.1.2 | 多步任务后自动沉淀可复用 skill，并在使用中顺手修正已有 skill（2 个命令 + Stop/SessionStart 钩子） | [plugins/skill-forge/README.md](plugins/skill-forge/README.md) |
+| `memory-loop` | 1.0.0 | 消费上游 `stop-memory.js` 产出的记忆候选：Stop 按 cwd 分流到各项目并去重，SessionStart 把蒸馏后的 `MEMORY.md` 注入上下文。1 个命令 + 2 个钩子 | [plugins/memory-loop/README.md](plugins/memory-loop/README.md) |
+| `project-guardrails` | 1.0.0 | 项目级约束：读 `<repo>/.zcode/guardrails.json`，SessionStart 注入约定、PreToolUse 执行工具规则。补的是「ZCode 不执行工作区级 hooks」这个缺口。1 个命令 + 2 个钩子 | [plugins/project-guardrails/README.md](plugins/project-guardrails/README.md) |
 
-`skill-forge` 的完整交接笔记（设计决策、审计记录、未验证项）见根目录 [`HANDOFF.md`](HANDOFF.md)。
+`memory-loop` 是「下游」性质的插件 —— 它假设上游已有某个钩子在写记忆候选（默认对接
+`~/.zcode/hooks/memory-candidates.jsonl`）。没有上游时它不会报错，只是什么也不做。
+
+`project-guardrails` 是**补充**而非替代：用户级的 `~/.zcode/hooks/guard-bash.js` 依旧是全局兜底黑名单，
+本插件只叠加**项目级增量规则**。两者在 `PreToolUse` 上共存 —— 多方决策按 `deny > ask > 其它` 归并。
+
+两份插件的完整设计笔记见根目录 [`HANDOFF.md`](HANDOFF.md)。
 
 ## 仓库结构
 
@@ -30,26 +41,37 @@
 zcode-plugin/                          ← 市场源根目录
 ├── marketplace.json                   市场清单（plugins[].source 指向插件目录）
 ├── README.md                          本文件 —— 市场级说明与插件开发约定
-├── HANDOFF.md                         跨会话交接笔记（当前主要是 skill-forge）
+├── HANDOFF.md                         跨会话交接笔记
 ├── .gitignore
 ├── docs/
 │   └── analysis/
 │       └── zcode-capability-gaps.md   ZCode 能力缺口分析 + 插件可补足清单（选题依据）
 └── plugins/
-    └── skill-forge/                   插件本体
-        ├── .zcode-plugin/plugin.json  插件清单
-        ├── README.md                  该插件的安装 / 验证 / 回滚说明
-        ├── commands/                  /skill-forge、/skill-audit
-        └── hooks/                     hooks.json + 钩子脚本 + 自带的 lib/
+    ├── skill-forge/                   插件本体
+    │   ├── .zcode-plugin/plugin.json  插件清单
+    │   ├── README.md                  该插件的安装 / 验证 / 回滚说明
+    │   ├── commands/                  /skill-forge、/skill-audit
+    │   └── hooks/                     hooks.json + 钩子脚本 + 自带的 lib/
+    ├── memory-loop/
+    │   ├── commands/                  /memory-loop
+    │   └── hooks/                     ingest-candidates.mjs（Stop）+ recall-memory.mjs（SessionStart）
+    └── project-guardrails/
+        ├── commands/                  /guardrails
+        └── hooks/                     session-rules.mjs + pretooluse-guard.mjs
 ```
+
+> 钩子脚本一律用 **`.mjs`** 后缀。插件目录里没有 `package.json`，`.`js` 能否被当成 ESM
+> 取决于 Node ≥ 22.7 的模块自动探测 —— `.mjs` 是显式的，不依赖 Node 版本。
 
 约定：**插件专属文档放 `plugins/<name>/README.md`**；市场级约定与跨插件事项写在本文件。
 
 ## 新增一个插件
 
 1. 建目录 `plugins/<kebab-case-name>/`
-2. 写 `plugins/<name>/.zcode-plugin/plugin.json` —— 最小只需 `name`；
-   可选组件字段：`version`、`commands`、`skills`、`hooks`、`mcpServers`、`agents`
+2. 写 `plugins/<name>/.zcode-plugin/plugin.json` —— 最小只需 `name`。
+   **真正能跑的组件只有 5 类**：`commands`、`skills`、`hooks`、`mcpServers`、`userConfig`。
+   `agents` / `outputStyles` / `settings` / `lspServers` 属于 `diagnosticOnly` —— 写进去会被识别、被记录，
+   但**不执行**（详见下方能力缺口文档）
 3. 做内容：`commands/*.md`、`hooks/hooks.json` + 脚本、`skills/<x>/SKILL.md`
 4. 在根 `marketplace.json` 的 `plugins[]` 追加一条：
 
@@ -99,6 +121,51 @@ zcode-plugin/                          ← 市场源根目录
 - stdin payload 是 **snake_case 与 camelCase 双写**，取值两种都要试
   （`hook_event_name` / `hookEventName`；`cwd`、`session_id`、`stop_hook_active`、`last_assistant_message` 都拿得到）
 - **插件全局生效**：一套钩子在所有工作区跑，钩子里**不能写死路径**，一律从 payload 的 `cwd` 现算
+
+#### `hookSpecificOutput` 是 7 个分支，字段不能跨事件混用
+
+源码里是 `discriminatedUnion("hookEventName", ...)`，**恰好每个事件一个分支**：
+
+| 事件 | 该分支允许的字段 |
+|---|---|
+| `PreToolUse` | `additionalContext?` + **`permissionDecision?: "allow"\|"ask"\|"deny"`** + `permissionDecisionReason?` + `updatedInput?` |
+| `PermissionRequest` | **`decision?`** —— `{ behavior:"allow", permissionUpdates:[{ type:"addRules", … }] }` 可直接改写权限规则集 |
+| `Stop` / `SessionStart` / `UserPromptSubmit` / `PostToolUse` / `PostToolUseFailure` | **只有 `additionalContext?`** |
+
+⇒ **能影响工具调用的只有 `PreToolUse` 和 `PermissionRequest`**。其余 5 个事件只能注入文本，别指望它们拦东西。
+⇒ `hookEventName` 与当前事件不一致会直接抛错。
+
+#### 多个钩子挂在同一事件上会怎样
+
+| 字段 | 合并方式 |
+|---|---|
+| `additionalContext` | **累积（push 进数组），不覆盖** —— 多个钩子各注入一段，全都生效 |
+| `permissionDecision` | **后者覆盖前者**，最终归并规则是 **`deny` > `ask` > 其它** |
+
+⇒ 推论：一个钩子「没意见」时必须发**空输出**，不能显式发 `allow` —— 那会把别人的 `deny` 冲掉。
+
+#### `async: true` 的真实语义（容易被误解）
+
+```js
+executionMode: type === "command" && async === true ? "background" : "foreground"
+```
+
+- **只对 `type: "command"` 生效**；`type: "process"` 的 schema 里根本没有这个字段
+- 语义是**丢到后台执行**（fire-and-forget），**不是**「延后注入上下文」
+- 适合**纯副作用**钩子（写文件 / 上报），不占用户那一轮
+- 要注入上下文就必须 `foreground`
+
+> 本项目实测：一次前台钩子的总开销约 **85 ms**（node 启动占大头）。
+> 所以 `PreToolUse` 上挂全量 matcher 是**要付代价**的 —— 钩子里的第一件事应该是
+> 「配置文件不存在就立刻退出」这种快速路径。
+
+#### 钩子进程能拿到的环境变量
+
+`ZCODE_PLUGIN_ROOT`（插件安装目录）/ `ZCODE_PLUGIN_DATA`（数据目录，**重装会清空**）/
+`ZCODE_PROJECT_DIR`（＝payload 的 `cwd`）/ `ZCODE_SESSION_ID` / `ZCODE_PLUGIN_ID` /
+`ZCODE_STORAGE_DIR` / `ZCODE_SKILL_DIR` / `ZCODE_APP_VERSION`（`CLAUDE_*` 双写）。
+`hooks.json` 的 `command` / `args` 里可写 `${ZCODE_PLUGIN_ROOT}` 做替换，
+但 `${ZCODE_SESSION_ID}` 在**声明期**替换会抛错，只能在运行时从 env 读。
 
 ### 生效机制
 
