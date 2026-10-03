@@ -1,7 +1,7 @@
 # HANDOFF — skill-forge 插件
 
-> 更新：2026-10-04 03:30
-> 状态：**源码已在 v1.1.1，待 GUI 重装；线上生效的是 v1.1.0**
+> 更新：2026-10-04 04:05
+> 状态：**源码已在 v1.1.2，待 GUI 重装；线上生效的是 v1.1.0**
 > 新会话直接从这里接。
 
 **最新变更（2026-10-04）**：
@@ -9,6 +9,7 @@
 - **v1.1.0**：skill 落点从全局库 `~/.zcode/skills/` 改为**当前项目**的 `<repo>/.zcode/skills/`，
   新增 `hooks/lib/project.js` 做路径解析。详见「八、落点为何是项目级」。
 - **v1.1.1**：一次「已装已用」状态审计后的修补（4 项），详见「九、v1.1.1 改了什么」。
+- **v1.1.2**：仓库身份统一为 `Jrtou` + 补 `LICENSE`，详见「十、v1.1.2 改了什么」。
 
 ---
 
@@ -60,6 +61,7 @@ D:\Code\zcode-plugin\                   ← ZCode「Add marketplace」指向这�
 | GUI 安装 | ✅ 市场已注册、插件已启用（实测确认） |
 | **落点改项目级** | ✅ v1.1.0 —— 6 处路径全改 + 新增 `hooks/lib/project.js` |
 | **v1.1.1 四项修补** | ✅ 源码已改（io.js / project.js / stop-skill-nudge.js / skill-forge.md），待重装 |
+| **v1.1.2 身份统一 + LICENSE** | ✅ 已改（marketplace.json / plugin.json / 根 README / LICENSE），待重装 |
 | **「已装已用」状态审计** | ✅ 2026-10-04 —— 见「九」 |
 | 语法检查（4 个 js） | ✅ `node --check` 全过 |
 | 冒烟测试 | ✅ 9 组场景全过（见下） |
@@ -114,14 +116,14 @@ D:\Code\zcode-plugin\                   ← ZCode「Add marketplace」指向这�
    启动日志 `bootstrap.app.startup.plugins.completed` 给出 `hookCount: 0 → 2`、
    `commandRootCount: 0 → 1`（装插件前后对比）—— 钩子确实挂上了。
 
-4. **重装到 v1.1.1** ← **当前唯一待办（GUI）**
-   本地目录市场**不会自动感知文件变化**。v1.1.1 改动了
-   `hooks/lib/io.js`、`hooks/lib/project.js`、`hooks/stop-skill-nudge.js`、`commands/skill-forge.md`，
-   并 bump 到 1.1.1。
+4. **重装到 v1.1.2** ← **当前唯一待办（GUI）**
+   本地目录市场**不会自动感知文件变化**。v1.1.2 累计了 v1.1.1 的四处修补
+   （`hooks/lib/io.js`、`hooks/lib/project.js`、`hooks/stop-skill-nudge.js`、`commands/skill-forge.md`）
+   与 v1.1.2 的身份统一（`plugin.json` 的 `author.name`）。
    需要在 `Settings → Plugins → Installed` 里对 `skill-forge` 执行更新/重装。
    缓存路径参考：`~/.zcode/cli/plugins/cache/zcode-plugin/skill-forge/<version>/`
 
-4. **开新会话验证**
+5. **开新会话验证**
    ZCode 在会话启动时快照 hook 配置，**不热加载**。
    - 打 `/` 应看到 `skill-forge`、`skill-audit`
    - 跑一个会踩坑的多步任务 → 看回复末尾写的是 **`<当前项目>/.zcode/skills/`** 而非 `~/.zcode/skills/`
@@ -262,3 +264,24 @@ D:\Code\zcode-plugin\                   ← ZCode「Add marketplace」指向这�
 `~/.zcode/hooks/memory-candidates.jsonl`：**275 条 / 249 KB**（2026-08-05 → 10-03）。
 全盘搜索只有生产者 `stop-memory.js` 引用它自己 —— **没有消费者**，每次 Stop 都在 append。
 按项目分：stock-agent 238、Lumi 19。建议先抽样 20 条看质量再决定，**别直接删**。
+
+---
+
+## 十、v1.1.2 改了什么（2026-10-04）
+
+仓库身份统一 + 补许可证文件。**无功能性改动**，钩子逻辑一个字没动。
+
+| # | 项 | 改前 | 改后 |
+|---|---|---|---|
+| 1 | 根 `LICENSE` | **不存在**（`plugin.json` 却已声明 MIT —— 声明不生效） | 新增 MIT 全文，`Copyright (c) 2026 Jrtou` |
+| 2 | `marketplace.json` → `owner.name` | `Ben` | `Jrtou` |
+| 3 | `plugins/skill-forge/.zcode-plugin/plugin.json` → `author.name` | `Ben` | `Jrtou` |
+| 4 | 版本号 | `1.1.1`（两处） | `1.1.2`（两处同步） |
+| 5 | 根 `README.md` | 只说明「声明了 MIT 但没有 LICENSE」 | 指向 `LICENSE`，删掉待定项 |
+
+**为什么 bump 而不是静默改**：`plugin.json` 在插件目录内，改了它就是改了插件内容。
+虽然本次是从 1.1.0 跨版本重装、不 bump 也会被复制，但按仓库自己的规矩
+（见根 `README.md`「新增一个插件」第 4 步）内容变了就该有版本号 —— 避免留下
+「同一个 1.1.1 有两份不同内容」的历史。
+
+署名口径：**统一用 `Jrtou`**（git 提交者 `Jrtou <benntqoo@gmail.com>`），不再混用 `Ben`。

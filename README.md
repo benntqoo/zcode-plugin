@@ -20,7 +20,7 @@
 
 | 插件 | 版本 | 作用 | 文档 |
 |---|---|---|---|
-| `skill-forge` | 1.1.1 | 多步任务后自动沉淀可复用 skill，并在使用中顺手修正已有 skill（2 个命令 + Stop/SessionStart 钩子） | [plugins/skill-forge/README.md](plugins/skill-forge/README.md) |
+| `skill-forge` | 1.1.2 | 多步任务后自动沉淀可复用 skill，并在使用中顺手修正已有 skill（2 个命令 + Stop/SessionStart 钩子） | [plugins/skill-forge/README.md](plugins/skill-forge/README.md) |
 
 `skill-forge` 的完整交接笔记（设计决策、审计记录、未验证项）见根目录 [`HANDOFF.md`](HANDOFF.md)。
 
@@ -152,6 +152,6 @@ ZCode **自带**官方 skill，比在线文档全 —— 先读它，别猜：
 
 ## 许可证
 
-`plugins/skill-forge/.zcode-plugin/plugin.json` 声明了 `"license": "MIT"`，
-但**仓库目前没有 `LICENSE` 文件** —— 要让声明正式生效需补一份；版权署名用哪个名字待定
-（`marketplace.json` 的 owner 写的是 `Ben`，git 提交者是 `Jrtou`）。
+**MIT** —— 见根目录 [`LICENSE`](LICENSE)（`Copyright (c) 2026 Jrtou`）。
+
+`marketplace.json` 的 `owner.name` 与各插件的 `plugin.json` `author.name` 同为 `Jrtou`，保持一致。

@@ -2,12 +2,12 @@
   "name": "zcode-plugin",
   "description": "Personal ZCode plugin marketplace.",
   "owner": {
-    "name": "Ben"
+    "name": "Jrtou"
   },
   "plugins": [
     {
       "name": "skill-forge",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "description": "Auto-distill reusable skills after multi-step tasks, and keep the skill library fresh and within budget.",
       "source": "./plugins/skill-forge",
       "category": "productivity"
