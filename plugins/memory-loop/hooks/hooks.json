@@ -1,0 +1,30 @@
+{
+  "description": "memory-loop hooks: ingest memory candidates into the project on Stop (pure side effect, no context injected), recall distilled memory on SessionStart.",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "process",
+            "command": "node",
+            "args": ["${ZCODE_PLUGIN_ROOT}/hooks/ingest-candidates.mjs"],
+            "timeoutMs": 8000
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "process",
+            "command": "node",
+            "args": ["${ZCODE_PLUGIN_ROOT}/hooks/recall-memory.mjs"],
+            "timeoutMs": 5000
+          }
+        ]
+      }
+    ]
+  }
+}
