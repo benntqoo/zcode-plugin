@@ -35,6 +35,37 @@
 
 两份插件的完整设计笔记见根目录 [`HANDOFF.md`](HANDOFF.md)。
 
+## 这些插件增强的是 ZCode 的「机制」，不是「提示词」
+
+**结论先行**：ZCode 的系统提示管线本身不弱 —— 它有 12 个 section 组装器（身份、环境、Git、
+记忆、技能、会话指引都在里面）。弱的是**可编程性与可移植性**：没有让外部往上下文塞内容的入口，
+也没有让项目自带约束的通道。本仓库的插件全部在补这三条机制。
+
+| ZCode 原生 | 后果 | 补足插件 | 补足手段 | 生效入口 |
+|---|---|---|---|---|
+| 记忆候选只写不读 | `memory-candidates.jsonl` 只增不减，全盘无消费者；原生记忆 `features.memory.enabled` 默认 `false` | `memory-loop` | 按 `cwd` 分流到各项目 → 手动蒸馏 → 会话开始注入 | `SessionStart` → `additionalContext` |
+| 工作区级 hooks **不执行** | 项目无法自带行为约束；`AGENTS.md` 只能写静态文字，管不住工具调用 | `project-guardrails` | 项目内写 `.zcode/guardrails.json`，由**用户级**插件代为执行 | `SessionStart` 注入约定 + `PreToolUse` 返回 `deny`/`ask` |
+| 经验不沉淀、skill 库无观测 | 踩过的坑下次重踩；description 撞预算后自动触发率骤降 | `skill-forge` | 任务收尾把经验写进 `<repo>/.zcode/skills/`，`/skill-audit` 盘点预算 | `Stop` + `SessionStart` + 2 个命令 |
+
+### 由此推出的使用须知（使用者视角）
+
+1. **唯一能往上下文塞自定义文本的窗口是 `SessionStart`**（以及静态的 `AGENTS.md`）。
+   `UserPromptSubmit` 每轮都跑，拿它注入同一份内容只是重复烧上下文预算。
+2. **唯一能拦住工具调用的窗口是 `PreToolUse` / `PermissionRequest`**，其余 5 个事件只能注入文本。
+3. **每次改配置或重装插件，都要开新会话** —— hook 配置在会话启动时快照，运行中的会话不会热加载。
+4. 本仓库插件的数据都落在**项目内**（`<repo>/.zcode/`），可 review、可进 git。
+   唯一例外是各插件的**机械游标**（放插件数据目录，重装会被清空 —— 这是设计允许的，丢了只需重扫）。
+
+### 补不了的三件（别在这上面花设计）
+
+| 想要 | 为什么不行 |
+|---|---|
+| 用插件替换 / 追加系统提示，或自定义输出风格 | `outputStyles` 属 `diagnosticOnly` —— 只记录、不执行 |
+| 让项目覆盖个人偏好（同名 skill / command） | 用户级优先于工作区级是硬编码规则，不是配置项 |
+| 用插件分发子代理、LSP、默认配置 | `agents`、`lspServers`、`settings` 同样不执行 |
+
+> 依据与取证命令见 [`docs/analysis/zcode-capability-gaps.md`](docs/analysis/zcode-capability-gaps.md)。
+
 ## 仓库结构
 
 ```
