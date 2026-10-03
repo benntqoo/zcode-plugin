@@ -1,11 +1,11 @@
 # HANDOFF — zcode-plugin 市场
 
-> 更新：2026-10-04 04:45
-> 状态：仓库共 **3** 个插件。`skill-forge` 已装 1.1.2 并已生效；
-> **`memory-loop` 与 `project-guardrails` 为新建（各 1.0.0），尚未安装到 ZCode。**
+> 更新：2026-10-04 05:50
+> 状态：仓库定位已扩为「**插件 + 技能开发库**」—— `plugins/` 3 个插件、`skills/` 1 个技能。
+> `skill-forge` 已装 1.1.2 并已生效；**`memory-loop` 与 `project-guardrails` 为新建（各 1.0.0），尚未安装到 ZCode**。
 > 新会话直接从这里接。
 >
-> 第一 ~ 十节是 `skill-forge` 的交接笔记。新插件见「十一」。
+> 第一 ~ 十节是 `skill-forge` 的交接笔记；新插件见「十一」；`skills/` 目录与 doc-protocol 合并见「十二」。
 
 **最新变更（2026-10-04）**：
 
@@ -382,3 +382,67 @@ D:\Code\zcode-plugin\                   ← ZCode「Add marketplace」指向这�
 1. 在市场里 Install 这两个插件 → **开新会话**。
 2. 装完读日志核对 `hookCount`（应先从 `2` 增加 —— 新增 4 个钩子条目；确切口径待实测）。
 3. 首次实战观察：跑过一轮后，`<repo>/.zcode/memory/candidates.jsonl` 是否被创建。
+
+## 十二、skills/ 与 doc-protocol（2026-10-04）
+
+本仓库定位从「插件市场」扩为「**插件 + 技能的开发库**」，新增顶层 `skills/`（与 `plugins/` 平行）。
+
+### 1. 为什么技能要单开一个目录
+
+| | `plugins/` | `skills/` |
+|---|---|---|
+| 分发 | 走市场（`marketplace.json` 的 `plugins[]`） | **没有独立分发通道**，手动落盘 |
+| 生效 | 安装插件 + 开新会话 | 落到技能根 + 开新会话或 `/clear` |
+
+技能的单元只是 `SKILL.md`，硬塞进插件（`plugin.json` + hooks/commands）反而是包裹过重 ——
+只有「需要 hooks/commands 一起分发」时才该做成插件。
+
+### 2. doc-protocol：由两个技能合并为一个
+
+来源两份（都不由本仓库维护，是**移植**来的）：
+
+| 原位置 | 形态 |
+|---|---|
+| `~/.agents/skills/doc-truth-protocol/`（105 行） | 通用原则层 |
+| `stock-agent/.agents/skills/doc-protocol/`（148 行 + evidence 116 行） | 项目专属路由 |
+
+合并设计（用户 2026-10-04 裁定「通用层 + 项目覆盖档」）：
+
+- **通用层** = `skills/doc-protocol/SKILL.md`（本仓库，通用原则，不预设文件名）
+  + `references/evidence.md`（抽象后的失效模式 E1~E11）
+  + `references/override-template.md`（覆盖档写法）
+- **项目覆盖档** = `<repo>/.agents/doc-protocol.md`。命中则**以它为准**。
+  stock-agent 的那份已就地转成覆盖档（`.agents/doc-protocol.md` + `-evidence.md`）。
+
+### 3. 关键发现：为什么覆盖档不能做成「同名技能」
+
+ZCode 解析 skill 根时，每个根带 `priority`（extraRoots=10 → 用户级 20/30 → 项目级 40/50+），
+按 priority **升序**排序后取**首个**匹配（源码：`.sort((o,s)=>o.priority-s.priority)` + `loadSkill` 的 `find`）。
+
+⇒ **用户级与项目级同名时，用户级遮蔽项目级。** 所以：
+
+- 覆盖档**必须换文件名**（做普通 markdown），不能同名。
+- 合并后的技能若在用户级叫 `doc-protocol`、而项目里也有同名技能 → 项目那份**永不生效**。
+
+### 4. 覆盖档必须可入库
+
+`stock-agent/.gitignore` 是 `.zcode/*`（只放行 `.zcode/skills/`）⇒ 放 `.zcode/` 的覆盖档
+**不会随 git 分发**，换台机器协议失效。故约定查找顺序：
+
+1. `<repo>/.agents/doc-protocol.md`（推荐 —— `.agents/` 一般入库）
+2. `<repo>/.zcode/doc-protocol.md`（备用）
+
+落盘前跑 `git check-ignore -v <路径>`。
+
+### 5. 本次对仓库外做了什么（可回滚）
+
+| 位置 | 动作 | 回滚方式 |
+|---|---|---|
+| `~/.agents/skills/doc-protocol/` | 新建（`cp -r` 自本仓库） | 删除该目录 |
+| `~/.agents/skills/doc-truth-protocol/` | 删除（被合并版取代） | 备份在 `~/.agents/.backup/doc-truth-protocol-20261004/` |
+| `stock-agent/.agents/skills/doc-protocol/` | `git rm -r`（内容搬入覆盖档） | `git checkout` 恢复 |
+| `stock-agent/.agents/doc-protocol.md` 等 | 新增 | 删除 |
+| `stock-agent/AGENTS.md` `:7`、`handoff.md:3` | 引用改指新路径 | `git checkout` |
+
+**stock-agent 的改动未提交** —— 那个仓库有自己的 doc-protocol（handoff 段 + 追踪表），
+按它的规矩该由头头在有上下文时提交，不该由本仓库代劳。

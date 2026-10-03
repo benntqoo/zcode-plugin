@@ -1,11 +1,20 @@
 # zcode-plugin
 
-个人 **ZCode 插件市场**仓库（marketplace id: `zcode-plugin`）。仓库根本身就是市场源 —— ZCode 的「Add marketplace → 本地目录」指向这个目录。
+个人 **ZCode 插件与技能的开发库**（marketplace id: `zcode-plugin`）。
 
-- 当前收录：**3** 个插件
-  - [`skill-forge`](plugins/skill-forge/README.md) —— 多步任务后沉淀可复用 skill
-  - [`memory-loop`](plugins/memory-loop/README.md) —— 闭合记忆回路：候选分流 → 蒸馏 → 会话注入
-  - [`project-guardrails`](plugins/project-guardrails/README.md) —— 补齐「工作区 hooks 不执行」留下的项目级约束缺口
+两类单元，各自独立、互不依赖：
+
+| | `plugins/` | `skills/` |
+|---|---|---|
+| 是什么 | 可安装的插件（可含 skills / commands / hooks / mcpServers） | 独立的技能（`SKILL.md` + 可选 `references/`） |
+| 怎么分发 | 走市场 —— 仓库根本身就是市场源，ZCode「Add marketplace → 本地目录」指向它 | **无独立分发通道**，手动复制 / 软链到 `~/.agents/skills/`（见 [`skills/README.md`](skills/README.md)） |
+| 怎么生效 | 安装插件 + **开新会话** | 落到技能根 + **开新会话或 `/clear`** |
+
+- 当前收录：**3** 个插件、**1** 个技能
+  - 插件：[`skill-forge`](plugins/skill-forge/README.md) —— 多步任务后沉淀可复用 skill
+  - 插件：[`memory-loop`](plugins/memory-loop/README.md) —— 闭合记忆回路：候选分流 → 蒸馏 → 会话注入
+  - 插件：[`project-guardrails`](plugins/project-guardrails/README.md) —— 补齐「工作区 hooks 不执行」留下的项目级约束缺口
+  - 技能：[`doc-protocol`](skills/doc-protocol/SKILL.md) —— 文档职责路由与进度真值协议
 - 远端：`git@github.com:benntqoo/zcode-plugin.git`（`main`）
 
 ## 安装
@@ -34,6 +43,25 @@
 本插件只叠加**项目级增量规则**。两者在 `PreToolUse` 上共存 —— 多方决策按 `deny > ask > 其它` 归并。
 
 两份插件的完整设计笔记见根目录 [`HANDOFF.md`](HANDOFF.md)。
+
+## 已收录技能
+
+| 技能 | 作用 | 文档 |
+|---|---|---|
+| `doc-protocol` | 文档职责路由与进度真值协议：每类事实只有一个权威载体、计数与状态禁抄进 prose、唯一待办账本、指令文件准入测试、会话开场/收尾清单。**通用层**（不预设文件名）+ 「项目覆盖档」机制 | [skills/doc-protocol/SKILL.md](skills/doc-protocol/SKILL.md) |
+
+**安装方式与插件不同** —— 技能没有独立分发通道，需手动落到用户级技能根：
+
+```bash
+cp -r skills/doc-protocol ~/.agents/skills/doc-protocol      # 或 ln -s 做软链
+```
+
+`~/.agents/skills/` 是跨 agent 共享位（推荐）；`~/.zcode/skills/` 亦可。装完开新会话或 `/clear`。
+目录约定与全部细节见 [`skills/README.md`](skills/README.md)。
+
+> ⚠️ **用户级技能优先于项目级。** 同名时 `~/.agents/skills/` 那份会**遮蔽**项目内的同名技能
+> （源码：各根带 `priority`，用户级 20/30 < 项目级 40/50+，按 priority 升序取**首个**匹配）。
+> 所以「项目覆盖」不能用同名技能实现 —— 用普通文件，见 `doc-protocol` 第零节。
 
 ## 这些插件增强的是 ZCode 的「机制」，不是「提示词」
 
@@ -71,30 +99,37 @@
 ```
 zcode-plugin/                          ← 市场源根目录
 ├── marketplace.json                   市场清单（plugins[].source 指向插件目录）
-├── README.md                          本文件 —— 市场级说明与插件开发约定
+├── README.md                          本文件 —— 开发库说明与开发约定
 ├── HANDOFF.md                         跨会话交接笔记
+├── LICENSE
 ├── .gitignore
 ├── docs/
 │   └── analysis/
-│       └── zcode-capability-gaps.md   ZCode 能力缺口分析 + 插件可补足清单（选题依据）
-└── plugins/
-    ├── skill-forge/                   插件本体
-    │   ├── .zcode-plugin/plugin.json  插件清单
-    │   ├── README.md                  该插件的安装 / 验证 / 回滚说明
-    │   ├── commands/                  /skill-forge、/skill-audit
-    │   └── hooks/                     hooks.json + 钩子脚本 + 自带的 lib/
-    ├── memory-loop/
-    │   ├── commands/                  /memory-loop
-    │   └── hooks/                     ingest-candidates.mjs（Stop）+ recall-memory.mjs（SessionStart）
-    └── project-guardrails/
-        ├── commands/                  /guardrails
-        └── hooks/                     session-rules.mjs + pretooluse-guard.mjs
+│       └── zcode-capability-gaps.md   ZCode 能力缺口分析 + 可补足清单（选题依据）
+├── plugins/                           插件源（每目录一个可安装插件）
+│   ├── skill-forge/                   插件本体
+│   │   ├── .zcode-plugin/plugin.json  插件清单
+│   │   ├── README.md                  该插件的安装 / 验证 / 回滚说明
+│   │   ├── commands/                  /skill-forge、/skill-audit
+│   │   └── hooks/                     hooks.json + 钩子脚本 + 自带的 lib/
+│   ├── memory-loop/
+│   │   ├── commands/                  /memory-loop
+│   │   └── hooks/                     ingest-candidates.mjs（Stop）+ recall-memory.mjs（SessionStart）
+│   └── project-guardrails/
+│       ├── commands/                  /guardrails
+│       └── hooks/                     session-rules.mjs + pretooluse-guard.mjs
+└── skills/                            技能源（独立于插件，手动安装到用户级技能根）
+    ├── README.md                      安装方式与目录约定
+    └── doc-protocol/
+        ├── SKILL.md                   通用层协议
+        └── references/                evidence.md（事故模式）+ override-template.md（项目覆盖档模板）
 ```
 
-> 钩子脚本一律用 **`.mjs`** 后缀。插件目录里没有 `package.json`，`.`js` 能否被当成 ESM
+> 钩子脚本一律用 **`.mjs`** 后缀。插件目录里没有 `package.json`，`.js` 能否被当成 ESM
 > 取决于 Node ≥ 22.7 的模块自动探测 —— `.mjs` 是显式的，不依赖 Node 版本。
 
-约定：**插件专属文档放 `plugins/<name>/README.md`**；市场级约定与跨插件事项写在本文件。
+约定：**插件专属文档放 `plugins/<name>/README.md`；技能自身的说明放 `skills/<name>/`**；
+开发库级约定与跨单元事项写在本文件；技能安装与目录约定写 `skills/README.md`。
 
 ## 新增一个插件
 
@@ -115,6 +150,34 @@ zcode-plugin/                          ← 市场源根目录
 5. 本地自测 → commit → GUI 里对该插件执行更新/重装 → **开新会话**验证
 
 命名约束：插件 `name` 必须匹配 `^[a-z0-9][a-z0-9._-]{0,127}$`。
+
+## 新增一个技能
+
+技能与插件的关键差别：**技能没有市场通道** —— 不进 `marketplace.json`，装法是手动落盘。
+
+1. 建目录 `skills/<kebab-case-name>/`，写 `skills/<name>/SKILL.md`：
+
+   ```markdown
+   ---
+   name: <name>
+   description: 做什么 + MUST USE 当：<触发条件，写具体场景与关键词>
+   ---
+
+   # <name>
+   ```
+2. 长内容放 `skills/<name>/references/`（模板、实证、长文档），`SKILL.md` 保持可扫读
+3. 需要打包成插件分发时（要 hooks / commands / 走市场）→ 挪到 `plugins/<name>/skills/<name>/`，
+   按上一节的插件流程走
+4. 安装到用户级技能根并开新会话：
+
+   ```bash
+   cp -r skills/<name> ~/.agents/skills/<name>     # 或 ln -s "$(pwd)/skills/<name>" ~/.agents/skills/<name>
+   ```
+
+命名约束同上。`description` 是**唯一触发依据**，决定它何时被加载 —— 别只写「一个关于 X 的技能」。
+规范细节见官方 `skill-creator` 技能。
+
+> ⚠️ 用户级与项目级**同名**时用户级胜出 —— 分发技能时注意别撞仓库内已有的同名技能。
 
 > **动笔前先读** [`docs/analysis/zcode-capability-gaps.md`](docs/analysis/zcode-capability-gaps.md) ——
 > ZCode 的插件兼容性清单把字段分成 `runnable` / `diagnosticOnly` / `unsupported` 三档，
