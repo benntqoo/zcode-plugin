@@ -41,7 +41,7 @@ skills/<name>/
 
 | 技能 | 作用 | 文档 |
 |---|---|---|
-| `doc-protocol` | 文档职责路由与进度真值协议（通用层 + 项目覆盖档机制） | [doc-protocol/SKILL.md](doc-protocol/SKILL.md) |
+| `doc-protocol` | 文档职责路由与进度真值协议 —— **通用原则**（1~8 节）+ **落地层**（9 节），内含 stock-agent 的载体映射、特有裁定与实证全文 | [doc-protocol/SKILL.md](doc-protocol/SKILL.md) |
 
 > ⚠️ 用户级技能**优先于**项目级：同名时 `~/.agents/skills/` 那份会**遮蔽**项目内的同名技能。
-> 所以「项目覆盖」不要靠同名技能实现，用普通文件（见 `doc-protocol` 第零节）。
+> 所以给某个仓库做**项目级落地**时不要用同名技能 —— 用普通文件，或换个目录名（见 `doc-protocol` 9.1）。

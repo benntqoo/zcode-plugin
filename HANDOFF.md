@@ -5,7 +5,8 @@
 > `skill-forge` 已装 1.1.2 并已生效；**`memory-loop` 与 `project-guardrails` 为新建（各 1.0.0），尚未安装到 ZCode**。
 > 新会话直接从这里接。
 >
-> 第一 ~ 十节是 `skill-forge` 的交接笔记；新插件见「十一」；`skills/` 目录与 doc-protocol 合并见「十二」。
+> 第一 ~ 十节是 `skill-forge` 的交接笔记；新插件见「十一」；`skills/` 目录与 doc-protocol 见「十二」
+> （**二次整合为一份自包含技能见「十二.6」**）。
 
 **最新变更（2026-10-04）**：
 
@@ -446,3 +447,28 @@ ZCode 解析 skill 根时，每个根带 `priority`（extraRoots=10 → 用户�
 
 **stock-agent 的改动未提交** —— 那个仓库有自己的 doc-protocol（handoff 段 + 追踪表），
 按它的规矩该由头头在有上下文时提交，不该由本仓库代劳。
+
+### 6. 二次整合：改为「一份自包含技能」（2026-10-04 晚）
+
+头头裁定：**不做「通用层 + 项目覆盖档」两层**，改成**一份自包含技能**；
+且**不要异动 stock-agent** —— 那个仓库的更新由他手动做。
+
+| 件 | 变更 |
+|---|---|
+| `skills/doc-protocol/SKILL.md` | **重写**（213 行）：1~8 节通用原则不变，**新增第九节「落到具体仓库」**（三种承载方式 / 两条硬约束 / stock-agent 实例 / 自修订方式） |
+| `skills/doc-protocol/references/stock-agent.md` | **新增**（79 行）：八层职责表 / 差异化落点 / 特有裁定（带日期） / E1~E11 实证 / 体量阈值 |
+| `skills/doc-protocol/references/evidence.md` | 保留（103 行）；仅两处措辞：「项目覆盖档」→「落地档」并指向实例文件 |
+| `skills/doc-protocol/references/override-template.md` | **删除** —— 内容已并入 SKILL.md 9.1 与实例文件 |
+| `skills/README.md` / 根 `README.md` | 收录表、技能描述、目录树、遮蔽警告同步（警告改指 9.1） |
+
+仓库外动作：
+
+- 删除 `stock-agent/.agents/`（两个 md）；备份在
+  `zcode-plugin/.workbuddy/backup/stock-agent-agents-20261004/`（`diff` 零差异）。
+- **未动** `~/.agents/skills/doc-protocol/` —— 由头头手动替换。
+
+> ⚠️ **遗留（需头头手动）** `stock-agent/AGENTS.md:7` 与 `handoff.md:3` **已提交入库**、
+> 仍指向 `.agents/doc-protocol.md`，删除后**悬空**，需改指
+> `~/.agents/skills/doc-protocol/SKILL.md`（细则见其 `references/stock-agent.md`）。
+
+本仓库改动**未提交**。

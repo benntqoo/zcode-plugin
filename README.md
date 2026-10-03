@@ -14,7 +14,7 @@
   - 插件：[`skill-forge`](plugins/skill-forge/README.md) —— 多步任务后沉淀可复用 skill
   - 插件：[`memory-loop`](plugins/memory-loop/README.md) —— 闭合记忆回路：候选分流 → 蒸馏 → 会话注入
   - 插件：[`project-guardrails`](plugins/project-guardrails/README.md) —— 补齐「工作区 hooks 不执行」留下的项目级约束缺口
-  - 技能：[`doc-protocol`](skills/doc-protocol/SKILL.md) —— 文档职责路由与进度真值协议
+  - 技能：[`doc-protocol`](skills/doc-protocol/SKILL.md) —— 文档职责路由与进度真值协议（自包含：通用原则 + 落地层，内含 stock-agent 实例）
 - 远端：`git@github.com:benntqoo/zcode-plugin.git`（`main`）
 
 ## 安装
@@ -48,7 +48,7 @@
 
 | 技能 | 作用 | 文档 |
 |---|---|---|
-| `doc-protocol` | 文档职责路由与进度真值协议：每类事实只有一个权威载体、计数与状态禁抄进 prose、唯一待办账本、指令文件准入测试、会话开场/收尾清单。**通用层**（不预设文件名）+ 「项目覆盖档」机制 | [skills/doc-protocol/SKILL.md](skills/doc-protocol/SKILL.md) |
+| `doc-protocol` | 文档职责路由与进度真值协议：每类事实只有一个权威载体、计数与状态禁抄进 prose、唯一待办账本、指令文件准入测试、会话开场/收尾清单。**一份自包含技能** —— 1~8 节通用原则（不预设文件名）+ 9 节落地层，内含 stock-agent 实例（载体映射 / 特有裁定 / 实证全文） | [skills/doc-protocol/SKILL.md](skills/doc-protocol/SKILL.md) |
 
 **安装方式与插件不同** —— 技能没有独立分发通道，需手动落到用户级技能根：
 
@@ -61,7 +61,7 @@ cp -r skills/doc-protocol ~/.agents/skills/doc-protocol      # 或 ln -s 做软�
 
 > ⚠️ **用户级技能优先于项目级。** 同名时 `~/.agents/skills/` 那份会**遮蔽**项目内的同名技能
 > （源码：各根带 `priority`，用户级 20/30 < 项目级 40/50+，按 priority 升序取**首个**匹配）。
-> 所以「项目覆盖」不能用同名技能实现 —— 用普通文件，见 `doc-protocol` 第零节。
+> 所以给某个仓库做项目级落地时不要用同名技能 —— 用普通文件或换目录名，见 `doc-protocol` 9.1。
 
 ## 这些插件增强的是 ZCode 的「机制」，不是「提示词」
 
@@ -120,9 +120,11 @@ zcode-plugin/                          ← 市场源根目录
 │       └── hooks/                     session-rules.mjs + pretooluse-guard.mjs
 └── skills/                            技能源（独立于插件，手动安装到用户级技能根）
     ├── README.md                      安装方式与目录约定
-    └── doc-protocol/
-        ├── SKILL.md                   通用层协议
-        └── references/                evidence.md（事故模式）+ override-template.md（项目覆盖档模板）
+    └── doc-protocol/                  一份自包含技能：通用原则 + 落地层
+        ├── SKILL.md                   协议正文（1~8 节通用原则 / 9 节落地方法）
+        └── references/
+            ├── evidence.md            通用失效模式 E1~E11（抽象，无项目名与数字）
+            └── stock-agent.md         stock-agent 落地实例（载体映射 / 裁定 / 实证全文）
 ```
 
 > 钩子脚本一律用 **`.mjs`** 后缀。插件目录里没有 `package.json`，`.js` 能否被当成 ESM
