@@ -15,6 +15,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { tmpdir } from "os";
 import { readStdinAsync, field, emitPass, emitBlockStop } from "./lib/io.js";
+import { resolveSkillTarget } from "./lib/project.js";
 
 const payload = await readStdinAsync();
 const eventName = field(payload, "hook_event_name", "hookEventName");
@@ -54,6 +55,18 @@ if (!(DONE_RE.test(message) && LESSON_RE.test(message) && PATH_RE.test(message))
   emitPass();
 }
 
+// ---- 落点：写进当前项目，不是全局库 ----
+// 插件是全局安装的，任何工作区都会跑这个钩子，所以路径必须按本次会话的 cwd 现算。
+// 保护：工作区就是 home 时，「项目级 .zcode/skills」与用户级目录重合 —— 推了
+// 等于把 skill 写进全局库，与「项目专属」的初衷正好相反，直接放行。
+const target = resolveSkillTarget(field(payload, "cwd"));
+
+if (target.isUserLevel) {
+  emitPass();
+}
+
+const skillsDirForMsg = target.skillsDir.replace(/\\/g, "/");
+
 // 闸 2：每 session 最多推 1 次
 // 状态落在插件数据目录（ZCode 会清掉临时目录，不能放那儿）
 const dataDir =
@@ -88,7 +101,8 @@ emitBlockStop(
     "",
     "结束前做一次沉淀判断，二选一：",
     "",
-    "A. 有可复用的做法 → 写入 `~/.zcode/skills/<kebab-name>/SKILL.md`，",
+    "A. 有可复用的做法 → 写入 `" + skillsDirForMsg + "/<kebab-name>/SKILL.md`，",
+    "   这是**本项目**的 skill 目录。不要写 `~/.zcode/skills/` —— 那是全局库，会污染所有项目。",
     "   frontmatter 只写 name / description / when_to_use / metadata。",
     "   description 写清「什么时候用」（250 字符截断后注入上下文，触发条件放最前面）。",
     "   写完一句话报路径。",

@@ -21,16 +21,37 @@ D:\Code\zcode-plugin\              仓库根 —— ZCode「添加市场」时�
             ├── hooks.json          SessionStart(compact|clear) + Stop
             ├── session-skill-rules.js  压缩后重新注入三铁律
             ├── stop-skill-nudge.js     兜底：该沉淀却没沉淀时推一次
-            └── lib/io.js           自带的 hook I/O 库（不依赖用户 hooks/lib）
+            └── lib\
+                ├── io.js           自带的 hook I/O 库（不依赖用户 hooks/lib）
+                └── project.js      解析「本项目」的 skill 落点（含 home 保护）
 ```
 
 ## 三条铁律
 
-1. **做完就沉淀** —— 走过 5+ 步试错 / 绕过非显然的坑 / 定下会重复用的口径 → 写 `~/.zcode/skills/<name>/SKILL.md`，不许问「要不要存」
+1. **做完就沉淀** —— 走过 5+ 步试错 / 绕过非显然的坑 / 定下会重复用的口径 → 写**当前项目**的 `.zcode/skills/<name>/SKILL.md`，不许问「要不要存」
 2. **用过就复检** —— 本轮调用过 skill，收尾前回读一遍，发现过时命令/错工具名/缺步骤就同轮改
 3. **读到错就修** —— 读 SKILL.md 发现错字或失效路径，当场改，不要只报告
 
 规则写入 `~/.zcode/AGENTS.md`（主渠道）。插件的 SessionStart 钩子只在 `compact|clear` 后补刀，避免与 AGENTS.md 重复占用 token。
+
+## 落点：项目级，不是全局
+
+**规则是全局的，skill 是项目专属的。** 这两件事分开看：
+
+| | 位置 | 作用域 |
+|---|---|---|
+| 三条铁律（规则） | `~/.zcode/AGENTS.md` | 所有工作区 —— 每个项目都具备沉淀能力 |
+| 产出的 SKILL.md | `<repo>/.zcode/skills/<name>/` | 只有当前项目 —— 随 git 走，不污染全局库 |
+
+两个钩子都从 payload 的 `cwd` 现算落点（`lib/project.js`），因为**插件本身是全局安装的**，同一个钩子会在任何工作区触发，路径写死就会错。
+
+**三条必须知道的 ZCode 规则**（出自官方 `zcode-configuration-guide`）：
+
+1. **用户级优先于工作区级** —— 同名 skill 时 `~/.zcode/skills/foo/` **胜出**，项目级那份被静默遮蔽。症状很隐蔽：文件在、改了不起作用。别在全局库留同名条目。
+2. **逐层向上扫描** —— 从 cwd 到仓库根，**每一层**的 `.zcode/skills/` 都算，越深越优先。
+3. **插件全局生效** —— 装一次，所有工作区都跑这套钩子。
+
+**一个边界已被挡掉**：工作区就是 home 时（`cwd = C:\Users\Ben`），「项目级 `.zcode/skills`」会解析成 `C:\Users\Ben\.zcode\skills`，**与用户级目录完全重合** —— 照推等于打着「项目专属」的旗号写全局库。`resolveSkillTarget()` 检测到重合即返回 `isUserLevel: true`，Stop 钩子直接放行。
 
 ---
 
@@ -81,7 +102,8 @@ D:\Code\zcode-plugin
 - 踩到并绕过了一个非显然的坑（环境、编码、路径、版本、权限）
 - 定下了一条口径、约定或决策，将来会重复用到
 
-落点：`~/.zcode/skills/<kebab-case-name>/SKILL.md`
+落点：**当前项目**的 `.zcode/skills/<kebab-case-name>/SKILL.md`
+（不是 `~/.zcode/skills/` —— 那是全局库，会让所有项目共用一套）
 
 frontmatter 只允许这几个字段，其余会被静默忽略：
 `name`(必填) / `description`(必填,≤1024字符) / `when_to_use` / `license` / `metadata`
@@ -120,7 +142,7 @@ hook 配置在**会话启动时快照**。改完必须**开新会话**才生效�
 1. 输入 `/` —— 应能看到 `skill-forge` 和 `skill-audit` 两个命令
 2. 跑一个会踩坑的多步任务（例如配一个环境、发现路径不对、绕过去）
 3. 观察两件事：
-   - 回复末尾是否出现写入 `~/.zcode/skills/` 的动作
+   - 回复末尾是否出现写入 **`<当前项目>/.zcode/skills/`** 的动作（不是 `~/.zcode/skills/`）
    - 若没写，是否被 Stop 钩子推了一轮
 4. 跑 `/skill-audit` 确认新 skill 进列表且 frontmatter 合规
 5. 查节流状态：
@@ -136,7 +158,10 @@ cat "${ZCODE_PLUGIN_DATA:-$TEMP/skill-forge}/nudge-state.json"
 | Stop 钩子不做静默沉淀 | `decision:block` 会让模型多跑一轮，用户要等、token 要烧。所以每 session 最多推 1 次 |
 | 插件 hooks 在设置页只读 | 不能单独开关某一条，只能整体启用/停用插件 |
 | 项目级 hooks 不执行 | ZCode 安全策略，`<workspace>/.zcode/config.json` 里的 hooks 被整体忽略 |
-| 改插件后需 bump version | `marketplace.json` 里的 `version` 不升，ZCode 不认为有更新 |
+| 改插件后需 bump version | `marketplace.json` 里的 `version` 不升，ZCode 不认为有更新（已实测） |
+| 用户级遮蔽项目级 | ZCode 既定行为，非本插件可控：同名 skill 时 `~/.zcode/skills/` 那份胜出 |
+| 工作区在 home 下不推 | 项目级落点会与用户级目录重合，`resolveSkillTarget()` 判定后直接放行 |
+| 落点无 git 时回退 cwd | `findProjectRoot()` 先找 `.git`、再找 `.zcode`，都没有就用 cwd 本身 |
 
 ## 回滚
 

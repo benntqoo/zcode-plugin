@@ -10,6 +10,7 @@
 // 这是一条保险，不是主渠道。主渠道是 AGENTS.md。
 
 import { readStdinAsync, field, emitContext, emitPass } from "./lib/io.js";
+import { resolveSkillTarget } from "./lib/project.js";
 
 const payload = await readStdinAsync();
 const eventName = field(payload, "hook_event_name", "hookEventName");
@@ -18,13 +19,20 @@ if (eventName !== "SessionStart") {
   emitPass();
 }
 
+// 落点按当前工作区现算 —— 插件全局安装，规则注入时必须指向「本项目」而非全局库。
+// isUserLevel（工作区就是 home）时没有项目级落点，退回用户级目录，语义上无歧义。
+const target = resolveSkillTarget(field(payload, "cwd"));
+const skillDir = target.isUserLevel
+  ? "~/.zcode/skills"
+  : target.skillsDir.replace(/\\/g, "/");
+
 emitContext(
   "SessionStart",
   [
     "[skill-forge] 上下文已被压缩，重新载入 skill 沉淀规则：",
     "",
     "1. 做完就沉淀 —— 本轮若走过 5+ 步的试错流程、绕过非显然的坑、或定下会重复用的口径，",
-    "   收尾前写入 `~/.zcode/skills/<kebab-name>/SKILL.md`。不要问「要不要存」。",
+    "   收尾前写入 `" + skillDir + "/<kebab-name>/SKILL.md`（本项目专属，不要写全局库）。不要问「要不要存」。",
     "   frontmatter 只认 name / description / when_to_use / license / metadata。",
     "   description 必须写清「什么时候用」，会被截断到 250 字符注入上下文，触发条件放最前面。",
     "",

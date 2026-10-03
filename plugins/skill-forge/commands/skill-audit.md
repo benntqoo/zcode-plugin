@@ -3,7 +3,10 @@ description: 体检 ZCode skill 库:数量预算、规格合规、边界重叠
 argument-hint: "[可选: 只检查某个目录]"
 ---
 
-体检 `~/.zcode/skills/` 下的 skill 库。**只读诊断，不要自动修改** —— 改什么由用户决定。
+体检 skill 库。**只读诊断，不要自动修改** —— 改什么由用户决定。
+
+默认只看**本项目**的 `.zcode/skills/`；用户明确要求时才连全局库 `~/.zcode/skills/` 一起看。
+两块都看时，**必须查同名遮蔽**（见检查项 1b）—— 那是 ZCode 最反直觉的一条规则。
 
 ## 为什么需要
 
@@ -13,8 +16,11 @@ ZCode 每轮把**所有启用中** skill 的 name + description 前 250 字符�
 
 ### 1. 清单与计数
 
+先确认项目根与项目级 skill 目录：
+
 ```bash
-ls -la ~/.zcode/skills/
+git rev-parse --show-toplevel 2>/dev/null || pwd
+ls -la .zcode/skills/ 2>/dev/null || echo "(本项目还没有 .zcode/skills/)"
 ```
 
 区分三类，分别报数：
@@ -22,6 +28,20 @@ ls -la ~/.zcode/skills/
 - **实体目录** —— 真正占预算的
 - **符号链接**（`lrwxrwxrwx`）—— 指向外部，标明来源，并检查目标是否失效
 - 给出总数
+
+### 1b. 同名遮蔽（两块都查时才做）
+
+ZCode 的扫描顺序里**用户级排在项目级前面**，且「first same-named skill wins」。
+结果：`~/.zcode/skills/foo/` 与 `<repo>/.zcode/skills/foo/` 同名时，**全局那份胜出**，
+项目级被静默遮蔽 —— 症状是「文件明明改了，行为没变」。
+
+```bash
+comm -12 \
+  <(ls ~/.zcode/skills/ 2>/dev/null | sort) \
+  <(ls .zcode/skills/ 2>/dev/null | sort)
+```
+
+有输出 → 逐个列出，提示用户：要么给项目级改名，要么去改全局那一份。
 
 ### 2. 规格合规
 
@@ -35,8 +55,10 @@ ls -la ~/.zcode/skills/
 其余字段（如 `author`、`version`、`license` 放错层级）会被**静默忽略**。
 
 ```bash
-for f in ~/.zcode/skills/*/SKILL.md; do
-  n=$(basename $(dirname "$f"))
+D=.zcode/skills          # 要看全局库就换成 ~/.zcode/skills
+for f in "$D"/*/SKILL.md; do
+  [ -e "$f" ] || continue
+  n=$(basename "$(dirname "$f")")
   d=$(grep -m1 '^description:' "$f" | wc -c)
   printf "%-30s desc=%s\n" "$n" "$d"
 done

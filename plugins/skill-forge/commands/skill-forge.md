@@ -15,14 +15,17 @@ argument-hint: "[可选: skill 名(kebab-case)]"
 2. **确定边界。** 先列出现有 skill：
 
    ```bash
-   ls ~/.zcode/skills/
+   ls .zcode/skills/ 2>/dev/null || echo "(本项目还没有 skill 目录)"
    ```
 
    若已有 skill 覆盖同一主题 → **改那个，不要新建**。metadata 预算有限，重叠会拉低自动触发率。
 
+   ⚠️ 落点是**本项目**的 `.zcode/skills/`，不是全局 `~/.zcode/skills/`。
+   全局库里的同名 skill 会**遮蔽**项目级的（ZCode 规则：user scope 优先），所以别把项目专属的东西写去全局。
+
 3. **定名。** kebab-case，名字要能一眼看懂用途。可用 `$ARGUMENTS` 指定；未指定则拟一个并说明理由。
 
-4. **写文件** `~/.zcode/skills/<name>/SKILL.md`：
+4. **写文件** `.zcode/skills/<name>/SKILL.md`（项目根下，随 git 提交）：
 
    ```yaml
    ---
