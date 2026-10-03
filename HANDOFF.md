@@ -122,8 +122,9 @@ D:\Code\zcode-plugin\                   ← ZCode「Add marketplace」指向这�
   `stop-memory.js` 只写不消费。本插件只管新账（skill），没管旧账（memory 候选）。
   建议：先抽样 20 条看质量，再决定是否聚合成 skill，**别直接删**。
 
-- **是否 git init**
-  `D:\Code\zcode-plugin` 目前不是 git 仓库。作为「正式项目」建议初始化，但未执行 —— 等确认。
+- ~~**是否 git init**~~ **已完成（2026-10-04）**
+  已初始化为 git 仓库，默认分支 `main`，远端 `git@github.com:benntqoo/zcode-plugin.git`。
+  首个提交 `b9a99f1`，本地与远端一致。含 `.gitignore`（排除 `node_modules`、`_c*.mjs` 等测试残留）。
 
 - **ZCode 原生 Project Memory 开关**
   `Settings → General → Memory`，默认关闭。与本机制职责重叠且**不可浏览/不可清除**。建议二选一。
