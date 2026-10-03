@@ -32,6 +32,9 @@ zcode-plugin/                          ← 市场源根目录
 ├── README.md                          本文件 —— 市场级说明与插件开发约定
 ├── HANDOFF.md                         跨会话交接笔记（当前主要是 skill-forge）
 ├── .gitignore
+├── docs/
+│   └── analysis/
+│       └── zcode-capability-gaps.md   ZCode 能力缺口分析 + 插件可补足清单（选题依据）
 └── plugins/
     └── skill-forge/                   插件本体
         ├── .zcode-plugin/plugin.json  插件清单
@@ -59,6 +62,13 @@ zcode-plugin/                          ← 市场源根目录
 5. 本地自测 → commit → GUI 里对该插件执行更新/重装 → **开新会话**验证
 
 命名约束：插件 `name` 必须匹配 `^[a-z0-9][a-z0-9._-]{0,127}$`。
+
+> **动笔前先读** [`docs/analysis/zcode-capability-gaps.md`](docs/analysis/zcode-capability-gaps.md) ——
+> ZCode 的插件兼容性清单把字段分成 `runnable` / `diagnosticOnly` / `unsupported` 三档，
+> 其中 `agents`、`outputStyles`、`settings`、`lspServers` **只记录不执行**。
+> 也就是**插件无法分发子代理、无法自定义系统提示/输出风格、无法带默认配置**。
+> 那份文档还列了 7 个 hook 事件之外的空白（无 `PreCompact`/`SessionEnd`/`SubagentStop`）
+> 和一份按性价比排序的可做选题清单。
 
 ## 开发硬规矩（实测踩过的坑，别重复）
 
