@@ -100,7 +100,8 @@ zcode-plugin/                          ← 市场源根目录
 | 安装缓存 | `~/.zcode/cli/plugins/cache/<marketplace-id>/<plugin>/<version>/` |
 | 市场缓存 | `~/.zcode/cli/plugins/marketplaces/<id>/` 是仓库的**副本**（自带 `.git`），不是软链 |
 | 插件数据目录 | `~/.zcode/cli/plugins/data/<name>@<marketplace>/`，钩子内由环境变量 `ZCODE_PLUGIN_DATA` 给出（回退 `CLAUDE_PLUGIN_DATA`）。**别落 tmpdir** —— 会被系统清 |
-| 安装记录 | `~/.zcode/cli/plugins/installed_plugins.json`（`version` / `installPath` / `scope`） |
+| **重装会清空插件数据目录** | 实测 1.1.0 → 1.1.2 后原本存在的 `nudge-state.json` 消失、目录被重建。⇒ 存在这里的状态**必须能从零重建**，不能当持久存储 |
+| 安装记录 | `~/.zcode/cli/plugins/installed_plugins.json`（`version` / `installPath` / `installedAt` / `scope`） |
 | 启用状态 | `~/.zcode/cli/config.json` → `plugins.enabledPlugins` |
 | 设置页 | 插件的 hooks **只读** —— 不能单独开关某一条，只能整体启用 / 停用插件 |
 
@@ -131,6 +132,21 @@ diff -r plugins/<name> ~/.zcode/cli/plugins/cache/<mkt>/<name>/<ver>
 # 钩子真跑过？（有状态文件 = 进程真起来过，不是只注册）
 ls ~/.zcode/cli/plugins/data/<name>@<mkt>/
 ```
+
+### 「装好了」≠「生效了」
+
+重装只换磁盘上的文件，**不会**换正在跑的会话里的钩子。用时间戳分辨：
+
+```bash
+# 重装时刻
+grep -o '"installedAt":"[^"]*"' ~/.zcode/cli/plugins/installed_plugins.json
+# 最近一次会话启动（＝插件被载入的时刻）
+grep "bootstrap.app.startup.plugins.completed" ~/.zcode/cli/log/zcode-$(date +%F).jsonl | tail -1 | grep -o '"timestamp":"[^"]*"'
+```
+
+**后者早于前者 ⇒ 没有任何会话载入过新版本**，当前会话还在跑旧快照 —— 此时别去查脚本逻辑，去**开新会话 / 重启应用**。
+
+日志文件 mtime 是「现在」**不能**证明有会话启动 —— 会话进行中一直在写日志，认 `timestamp` 不认 mtime。
 
 ### 权威文档在哪
 

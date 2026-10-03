@@ -116,14 +116,20 @@ D:\Code\zcode-plugin\                   ← ZCode「Add marketplace」指向这�
    启动日志 `bootstrap.app.startup.plugins.completed` 给出 `hookCount: 0 → 2`、
    `commandRootCount: 0 → 1`（装插件前后对比）—— 钩子确实挂上了。
 
-4. **重装到 v1.1.2** ← **当前唯一待办（GUI）**
-   本地目录市场**不会自动感知文件变化**。v1.1.2 累计了 v1.1.1 的四处修补
-   （`hooks/lib/io.js`、`hooks/lib/project.js`、`hooks/stop-skill-nudge.js`、`commands/skill-forge.md`）
-   与 v1.1.2 的身份统一（`plugin.json` 的 `author.name`）。
-   需要在 `Settings → Plugins → Installed` 里对 `skill-forge` 执行更新/重装。
-   缓存路径参考：`~/.zcode/cli/plugins/cache/zcode-plugin/skill-forge/<version>/`
+4. ~~**重装到 v1.1.2**~~ ✅ **已完成（2026-10-04 04:06 核对）**
+   实测：`installed_plugins.json` → `version: "1.1.2"`，`installPath` 指向 `…/cache/zcode-plugin/skill-forge/1.1.2`；
+   旧版本目录已清空（只剩 `1.1.2`）。仓库源码 vs 安装缓存 `diff -r` **零差异**；
+   vs 市场缓存副本 `~/.zcode/cli/plugins/marketplaces/zcode-plugin/plugins/skill-forge/` 亦**零差异**。
+   `config.json` 的 `enabledPlugins` 仍为 `true`。
+   ⚠️ 副作用：**重装会清空插件数据目录** —— 原来那个 `nudge-state.json` 已消失、目录被重建。
+   ⇒ 这里的任何状态都必须能从零重建，不能当持久存储。（已记入根 `README.md` 与技能库）
 
-5. **开新会话验证**
+5. **开新会话验证** ← **当前唯一待办**
+   ⚠️ **此刻还没生效**：重装于 `2026-10-03T20:06:12Z`，而日志里最近一次
+   `bootstrap.app.startup.plugins.completed` 是 `2026-10-03T17:14:22Z`（＝ 01:14 CST，重装前）。
+   两者之间没有任何会话启动 ⇒ **当前会话仍在跑 v1.1.0 的钩子快照**。
+   hooks 在会话启动时快照、不热加载 —— 必须**开新会话或重启应用**才切到 1.1.2。
+   （别拿日志 mtime 判断：本会话一直在写日志，mtime 是「现在」；只认 `timestamp`。）
    ZCode 在会话启动时快照 hook 配置，**不热加载**。
    - 打 `/` 应看到 `skill-forge`、`skill-audit`
    - 跑一个会踩坑的多步任务 → 看回复末尾写的是 **`<当前项目>/.zcode/skills/`** 而非 `~/.zcode/skills/`
