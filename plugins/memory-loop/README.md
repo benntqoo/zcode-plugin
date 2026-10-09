@@ -40,7 +40,10 @@ stop-memory.js 钩子 ──写出──▶ memory-candidates.jsonl ──✗ �
 
 ## 数据落点
 
-全部在**项目内**，可以 review、可以进 git：
+全部在**项目内**。入库建议区分对待：**`MEMORY.md`（蒸馏后的结论）建议进 git** —— 它是可 review 的项目记忆；
+`candidates.jsonl` / `state.json` 是原始收件箱与机械游标，**建议忽略**（每次 Stop 都会追加，入库只会带来
+常脏的工作区与无价值的提交噪音；原始档在机器侧全局 jsonl 里另有留存）。参考 ignore 写法：`.zcode/*` +
+`!.zcode/skills/`（按需放行 `!.zcode/memory/MEMORY.md`）。
 
 ```
 <repo>/.zcode/memory/
