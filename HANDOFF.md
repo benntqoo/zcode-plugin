@@ -40,6 +40,7 @@
 |---|---|---|---|---|
 | ⏳ 验证点 | 开场注入切换到真账本 | 十八 | 下一会话开场核对 `[entrypoints]` 块：只列本表行、死行 0 | doc-budget.json 生效后首个会话 |
 | 🔴 待办 | memory-loop 重装 1.0.1 | 十八 | GUI 更新 + 开新会话 | 仅 README 措辞，无功能变化 |
+| 🔴 待办 | project-guardrails 重装 1.1.2 | 十八补记 | GUI 更新 + 开新会话 | 仅测试文件差异，可与 1.0.1 顺手一起 |
 | 🟡 挂起 | stock-agent 首次账本投影 | 十六 | 触发线：头头在 stock-agent 侧执行 | 以该仓库账本为准 |
 
 ---
@@ -753,3 +754,10 @@ A8 语义随之改写（「无配置」≠「无输出」了）。
 原始档机器侧全局 jsonl 另有留存）；memory-loop README「数据落点」改口径为
 「MEMORY.md 建议入库、candidates/state 建议忽略」，版本 1.0.0 → 1.0.1（仅文档，待 GUI 重装）。
 测试 `entrypoints.test.sh` 37/37 全绿、`py_compile` 通过。
+
+**补记1（同日晚 · codeview 修复批次）**：审查三 Minor 全修 —— ① README 版本表 memory-loop 滞后；
+② 脚本 docstring 补自动发现语义（含「坏配置 exit 2 属有意响亮失败」）；③ `_INLINE_CODE` 正则改
+`` `+[^`\n]*`+ `` 补剥双反引号 span。测试 +5 条（A18/A18b/A18c 死行代码-span 与两侧判定一致、
+A19/A19b config 自动发现），37 → **42** 全绿 —— 共享 fixture 不加行（A4c/B3/A14 对它计数），
+新开 dp2 fixture 并自带 `.zcode/` 标记防上溯。测试文件变更 ⇒ guardrails bump **1.1.2**（运行时零差异，
+重装可与 1.0.1 合并做）。安装态脚本已再次同步。

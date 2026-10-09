@@ -21,7 +21,7 @@
     },
     {
       "name": "project-guardrails",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "description": "Per-project guardrails on a user-level plugin. Zero-config by default: a repo with a handoff ledger carrier gets the ledger index + doc-size budget injected at SessionStart (convention over configuration). Declare `context`, tool rules and `entrypoints` in <repo>/.agents/guardrails.json (fallback .zcode/) to override or to turn it off.",
       "source": "./plugins/project-guardrails",
       "category": "productivity"

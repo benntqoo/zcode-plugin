@@ -33,8 +33,8 @@
 | 插件 | 版本 | 作用 | 文档 |
 |---|---|---|---|
 | `skill-forge` | 1.1.2 | 多步任务后自动沉淀可复用 skill，并在使用中顺手修正已有 skill（2 个命令 + Stop/SessionStart 钩子） | [plugins/skill-forge/README.md](plugins/skill-forge/README.md) |
-| `memory-loop` | 1.0.0 | 消费上游 `stop-memory.js` 产出的记忆候选：Stop 按 cwd 分流到各项目并去重，SessionStart 把蒸馏后的 `MEMORY.md` 注入上下文。1 个命令 + 2 个钩子 | [plugins/memory-loop/README.md](plugins/memory-loop/README.md) |
-| `project-guardrails` | 1.1.1 | 项目级约定与工具规则 + **会话开场索引**。`entrypoints[]`（待办账本索引 + 体量状态）**零配置**：仓库里只要有账本载体就自动注入，无需写配置文件；`context[]` / `rules[]` 按需在 `<repo>/.agents/guardrails.json`（回退 `.zcode/`）声明。1 个命令 + 3 个钩子 | [plugins/project-guardrails/README.md](plugins/project-guardrails/README.md) |
+| `memory-loop` | 1.0.1 | 消费上游 `stop-memory.js` 产出的记忆候选：Stop 按 cwd 分流到各项目并去重，SessionStart 把蒸馏后的 `MEMORY.md` 注入上下文。1 个命令 + 2 个钩子 | [plugins/memory-loop/README.md](plugins/memory-loop/README.md) |
+| `project-guardrails` | 1.1.2 | 项目级约定与工具规则 + **会话开场索引**。`entrypoints[]`（待办账本索引 + 体量状态）**零配置**：仓库里只要有账本载体就自动注入，无需写配置文件；`context[]` / `rules[]` 按需在 `<repo>/.agents/guardrails.json`（回退 `.zcode/`）声明。1 个命令 + 3 个钩子 | [plugins/project-guardrails/README.md](plugins/project-guardrails/README.md) |
 
 `memory-loop` 是「下游」性质的插件 —— 它假设上游已有某个钩子在写记忆候选（默认对接
 `~/.zcode/hooks/memory-candidates.jsonl`）。没有上游时它不会报错，只是什么也不做。

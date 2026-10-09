@@ -205,6 +205,49 @@ else
   echo "  skip  A14（未找到 check-doc-budget.py）"
 fi
 
+# A18/A19（独立 fixture dp2）：守 check-doc-budget.py 两个修复 ——
+#     死行判定剥行内代码 span（单/双反引号）、--config 缺省自动发现 <root>/doc-budget.json。
+#     共享 fixture 不能加行（A4c/B3/A14 都对它计数），所以单开目录；
+#     dp2 自带 .zcode/ 标记，防止 findProjectRoot 上溯到 dp-test 的 .agents/。
+if [ -f "$BUDGET_PY" ]; then
+  DP2="$BASE_U/dp2"; DP2_W="$BASE_W/dp2"
+  rmp "$DP2"
+  mkdir -p "$DP2/.zcode"
+  cat >"$DP2/handoff.md" <<'MD'
+# handoff dp2
+
+## A
+
+| 状态 | 事项 |
+|---|---|
+| 🔴 待办 | 真活行 |
+| ~~🔴 待办~~ | 真死行 |
+| 🔴 待办 | 规则行引用单反引号 `~~` 字面量 |
+| 🔴 待办 | 规则行引用双反引号 ``~~`` 字面量 |
+
+## 2026-10-09(窄区)窄段 — 结果
+
+| 状态 | 事项 |
+|---|---|
+| 🟡 挂起 | 窄区行 |
+MD
+  PYJ2="$("$PY" "$BUDGET_PY" --root "$DP2_W" --quiet 2>/dev/null)"
+  pyv2() { printf '%s' "$PYJ2" | "$PY" -c "import json,sys;o=json.load(sys.stdin)['report'];print($1)"; }
+  chk "A18 代码 span 内的波浪线不算死行（仅真死行 1）" "$(pyv2 "o['ledger']['completedRows']")" "1"
+  chk "A18b 默认区间数据行 = 4（A 表全部）" "$(pyv2 "o['ledger']['rows']")" "4"
+  # 钩子侧同 fixture（零配置约定集）读同一段默认区间：死行数必须一致
+  chk "A18c 钩子侧死行同为 1（两侧判定不分叉）" \
+    "$(run "$DP2_W" | ctx_of | grep -o '[0-9]* 死行' | grep -o '[0-9]*')" "1"
+
+  # A19 自动发现：root 下出现 doc-budget.json 后，不带 --config 也必须切到窄区
+  printf '%s' '{"ledger":{"from":"^## 2026"}}' >"$DP2/doc-budget.json"
+  PYJ3="$("$PY" "$BUDGET_PY" --root "$DP2_W" --quiet 2>/dev/null)"
+  pyv3() { printf '%s' "$PYJ3" | "$PY" -c "import json,sys;o=json.load(sys.stdin)['report'];print($1)"; }
+  chk "A19 无 --config 时自动发现 doc-budget.json（切到窄段）" "$(pyv3 "o['ledger']['rows']")" "1"
+  chk "A19b 窄区死行 0" "$(pyv3 "o['ledger']['completedRows']")" "0"
+  rmp "$DP2/doc-budget.json"
+fi
+
 # ---------------------------------------------------------------- B 组（反向变异，全红才算过）
 echo "-- B 组（以下每条都必须「变异后行为改变」）--"
 
