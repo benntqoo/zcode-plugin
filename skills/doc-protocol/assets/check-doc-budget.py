@@ -250,6 +250,14 @@ def _ledger_region(lines, spec):
     return start, end
 
 
+_INLINE_CODE = re.compile(r"`[^`\n]*`")
+
+
+def _is_completed_row(row: str) -> bool:
+    """完成行 = 代码 span 之外存在 `~~`（行内反引号里引用的 `~~` 字面量不算）。"""
+    return "~~" in _INLINE_CODE.sub("", row)
+
+
 def check_ledger(root: str, spec) -> tuple[list, list, dict]:
     violations, warnings, report = [], [], {}
     path = os.path.join(root, spec["path"])
@@ -262,9 +270,9 @@ def check_ledger(root: str, spec) -> tuple[list, list, dict]:
     region_bytes = _bytes("\n".join(region))
     rows = list(_iter_table_rows(region))
     data_rows = [r for _i, r in rows]
-    completed = [r for r in data_rows if "~~" in r]
+    completed = [r for r in data_rows if _is_completed_row(r)]
     no_status = [r for r in data_rows
-                 if "~~" not in r and not any(sym in r for sym in STATUS_SYMBOLS)]
+                 if not _is_completed_row(r) and not any(sym in r for sym in STATUS_SYMBOLS)]
     row_bytes = [_bytes(r) for r in data_rows] or [0]
     report.update({
         "path": spec["path"], "exists": True,
@@ -437,10 +445,17 @@ def main(argv=None) -> int:
     args = ap.parse_args(argv)
 
     root = os.path.abspath(args.root)
+    # --config 缺省时自动发现 <root>/doc-budget.json —— 与 entrypoints 钩子的
+    # loadBudgetConfig 行为对齐（钩子自动读），避免「闸忘了 --config 而误报全文红」。
     cfg = DEFAULTS
-    if args.config:
+    cfg_path = args.config
+    if not cfg_path:
+        auto = os.path.join(root, "doc-budget.json")
+        if os.path.isfile(auto):
+            cfg_path = auto
+    if cfg_path:
         try:
-            with open(args.config, encoding="utf-8") as fh:
+            with open(cfg_path, encoding="utf-8") as fh:
                 cfg = _deep_merge(DEFAULTS, json.load(fh))
         except Exception as e:  # noqa: BLE001
             print(f"配置读取失败: {e}", file=sys.stderr)
