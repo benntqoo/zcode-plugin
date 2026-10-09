@@ -1,12 +1,21 @@
 # HANDOFF — zcode-plugin 市场
 
-> 更新：2026-10-04 05:50
+> 更新：2026-10-09
 > 状态：仓库定位已扩为「**插件 + 技能开发库**」—— `plugins/` 3 个插件、`skills/` 1 个技能。
-> `skill-forge` 已装 1.1.2 并已生效；**`memory-loop` 与 `project-guardrails` 为新建（各 1.0.0），尚未安装到 ZCode**。
+> **三个插件均已安装生效**：`skill-forge` 1.1.2、`memory-loop` 1.0.0、`project-guardrails` 1.1.1
+> （后者 2026-10-09 装毕并完成会话内验证，见「十七」）。
 > 新会话直接从这里接。
 >
 > 第一 ~ 十节是 `skill-forge` 的交接笔记；新插件见「十一」；`skills/` 目录与 doc-protocol 见「十二」
 > （**二次整合为一份自包含技能见「十二.6」**）。
+
+**最新变更（2026-10-09）**：
+
+- **`project-guardrails` v1.1.1 上线并验证**：entrypoints 零配置（`defaultSpecs`）+ 双路径配置 + 独立失败域
+  第二 SessionStart 钩子；37 条测试全绿；安装后在真实会话实证零配置注入生效。详见「十五」「十七」。
+- **`doc-protocol` 体量治理落地**：热/温/冷分层 + 双预算 + 归档字节判据 + `assets/check-doc-budget.py`
+  体量闸。详见「十六」。
+- 三提交（`45b403f` / `38c576c` / `5212a04`）+ 账本首清一次（「十七」）。
 
 **最新变更（2026-10-04）**：
 
@@ -130,15 +139,7 @@ D:\Code\zcode-plugin\                   ← ZCode「Add marketplace」指向这�
    ⚠️ 副作用：**重装会清空插件数据目录** —— 原来那个 `nudge-state.json` 已消失、目录被重建。
    ⇒ 这里的任何状态都必须能从零重建，不能当持久存储。（已记入根 `README.md` 与技能库）
 
-5. **开新会话验证** ← **当前唯一待办**
-   ⚠️ **此刻还没生效**：重装于 `2026-10-03T20:06:12Z`，而日志里最近一次
-   `bootstrap.app.startup.plugins.completed` 是 `2026-10-03T17:14:22Z`（＝ 01:14 CST，重装前）。
-   两者之间没有任何会话启动 ⇒ **当前会话仍在跑 v1.1.0 的钩子快照**。
-   hooks 在会话启动时快照、不热加载 —— 必须**开新会话或重启应用**才切到 1.1.2。
-   （别拿日志 mtime 判断：本会话一直在写日志，mtime 是「现在」；只认 `timestamp`。）
-   ZCode 在会话启动时快照 hook 配置，**不热加载**。
-   - 打 `/` 应看到 `skill-forge`、`skill-audit`
-   - 跑一个会踩坑的多步任务 → 看回复末尾写的是 **`<当前项目>/.zcode/skills/`** 而非 `~/.zcode/skills/`
+5. ~~**开新会话验证**~~ ✅ **已完成**（2026-10-04 核对 + 2026-10-09 会话内复验，见「十七」）
 
 ---
 
@@ -146,8 +147,6 @@ D:\Code\zcode-plugin\                   ← ZCode「Add marketplace」指向这�
 
 | 项 | 说明 |
 |---|---|
-| ~~`marketplace.json` 的位置~~ | ✅ **已验证**（2026-10-04）：放仓库根即可，市场成功添加 |
-| ~~`plugins/` 子目录约定~~ | ✅ **已验证**：插件从 `plugins/skill-forge/` 成功安装并启用 |
 | `ZCODE_PLUGIN_ROOT` 变量替换 | 插件能跑说明替换生效（**间接**验证）；展开后的具体路径**未直接观测** |
 | 原 `io.js:113` 的 `emitContinue` | 用 legacy 的 `{continue:true, stopReason}` 格式，官方推荐 `{decision:"block", reason}`。**本插件绕开了它**（自带 io.js），原有那个没改、没测 |
 
@@ -386,9 +385,7 @@ D:\Code\zcode-plugin\                   ← ZCode「Add marketplace」指向这�
 
 ### 待办
 
-1. 在市场里 Install 这两个插件 → **开新会话**。
-2. 装完读日志核对 `hookCount`（应先从 `2` 增加 —— 新增 4 个钩子条目；确切口径待实测）。
-3. 首次实战观察：跑过一轮后，`<repo>/.zcode/memory/candidates.jsonl` 是否被创建。
+✅ 三条均已了结（2026-10-05 安装、`hookCount` 7、`candidates.jsonl` 已产出；2026-10-09 复验见「十七」）。
 
 ## 十二、skills/ 与 doc-protocol（2026-10-04）
 
@@ -506,8 +503,8 @@ ZCode 解析 skill 根时，每个根带 `priority`（extraRoots=10 → 用户�
 |---|---|---|
 | F1 | **`marketplace.json` 落后于仓库**：市场快照与 `known_marketplaces.json` 的 `pluginCount: 1` 只有 `skill-forge` | `memory-loop` / `project-guardrails` **从未可装**（不是"未安装"）。**先在 GUI 刷新市场** |
 | F2 | **技能注入行被静默截断到 249 字**（`formatSkillLine(u, 250)`） | `doc-protocol` 的 description 实测 269 字 ⇒ 尾部「任何仓库，即使用户没提「文档」二字」被切掉。`when_to_use` 是合法 frontmatter 键但拼在 description **之后**一起截，救不了 ⇒ 只能压缩前置。**✅ 已修（2026-10-05）：压到 248 字，尾部完整保留；仓库源 + 安装态双处同步** |
-| F3 | **🔴 更正旧断言**：「工作区级 hooks 不执行」**不准确** | 实为 `IQs()` 给项目 hook 挂 `admission → evaluateDispatch()`；`trustState` 含 `trusted_persistent`，默认 `pending_trust`，`bundleDigest`/`hookDeclarationDigest` 一变即 `stale_digest` 失效；另有 `blocked_policy`。**✅ 已修（2026-10-05）：全部旧措辞改为「默认待信任」；仅在「引述 + 声明其错误」的更正语境保留原句** |
-| F4 | **🔴 `entrypoints` 违背开箱即用**（头头质疑「为什么需要手动添加 `.agents/guardrails.json`」） | 默认值**早已写在** `BUDGET_DEFAULTS` 里，却没有出口：`loadEntrypoints` 在配置缺失时直接 `return null` ⇒ 要求人把同样的约定**再抄一遍**成 `entrypoints[]` 才生效。那不算配置，算重复劳动。**✅ 已修（2026-10-05，v1.1.1）：加内置约定集 `defaultSpecs`（约定优于配置），并修掉它牵出的两个隐藏缺陷 —— 见 §5-F4 详情** |
+| F3 | 更正旧断言：「工作区级 hooks 不执行」**不准确** ✅ 已修 | 实为 `IQs()` 给项目 hook 挂 `admission → evaluateDispatch()`；`trustState` 含 `trusted_persistent`，默认 `pending_trust`，`bundleDigest`/`hookDeclarationDigest` 一变即 `stale_digest` 失效；另有 `blocked_policy`。**✅ 已修（2026-10-05）：全部旧措辞改为「默认待信任」；仅在「引述 + 声明其错误」的更正语境保留原句** |
+| F4 | `entrypoints` 违背开箱即用（头头质疑「为什么需要手动添加 `.agents/guardrails.json`」）✅ 已修 | 默认值**早已写在** `BUDGET_DEFAULTS` 里，却没有出口：`loadEntrypoints` 在配置缺失时直接 `return null` ⇒ 要求人把同样的约定**再抄一遍**成 `entrypoints[]` 才生效。那不算配置，算重复劳动。**✅ 已修（2026-10-05，v1.1.1）：加内置约定集 `defaultSpecs`（约定优于配置），并修掉它牵出的两个隐藏缺陷 —— 见 §5-F4 详情** |
 
 ### 3. 产出：`docs/plans/project-guardrails-entrypoints-task-2026-10-04.md`
 
@@ -699,3 +696,21 @@ A8 语义随之改写（「无配置」≠「无输出」了）。
 
 **刻意未改**：`.workbuddy/memory/2026-10-05.md:204` 的旧口径（日志 append-only，已由本日 D 段更正）；
 `docs/reviews/…:172` 与带墓碑的 `-bloat-control-optimized…:208/275`（时点证据，按协议不回改）。
+
+---
+
+## 十七、v1.1.1 上线验证 + 账本首清（2026-10-09）
+
+- 三提交落库：`45b403f`（guardrails v1.1.1 零配置 entrypoints）/ `38c576c`（doc-protocol 体量治理 +
+  `check-doc-budget.py`）/ `5212a04`（reviews/plans 落库 + F3 措辞更正）。提交前 `test/entrypoints.test.sh` 全绿。
+- **v1.1.1 已安装并在真实会话实证**：`installed_plugins.json` → 1.1.1（2026-10-09T02:56Z 安装），
+  缓存与源码 `diff -r` 零差异、旧 1.1.0 缓存已清；本日会话开场注入出现「内置约定」标记与体量行 ——
+  **零配置路径生效**（本仓库无 `guardrails.json`，纯约定触发）。`memory-loop` 亦已装并在本仓库产出
+  首批 `.zcode/memory/candidates.jsonl`（暂留未跟踪，入不入 git 待拍板）。
+- 账本首清（doc-protocol §四「投影」）：§五 2 条已验证死行移入 `docs/archive/handoff-ledger-2026-10.md`
+  并从活表删除；§十三 F3/F4 行内陈旧 🔴 收除（证据列本就带 ✅ 已修）；§四.5 与 §十一 待办三条均了结。
+- 遗留（待拍板）：
+  1. `.zcode/memory/candidates.jsonl` 是否入库（入库 / 进 .gitignore，二选一）；
+  2. 体量闸对本仓库 HANDOFF 报「活账本越限」—— 本仓库交接文档是叙事型、无日期段头，默认约定把
+     全文当账本区；且 §十六 表格内 `` `~~` `` 字面量被误计为死行（4 计中 2 真 2 假）。结构性治法
+     （HANDOFF 改钉表格式 / 配 `doc-budget.json` / 修脚本排除代码-span）另立项。
