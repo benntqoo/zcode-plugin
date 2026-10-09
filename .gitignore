@@ -20,5 +20,8 @@ desktop.ini
 .vscode/
 *.swp
 
+# Python 字节码缓存
+__pycache__/
+
 # 钩子运行时状态（若在仓库内被生成）
 .hook-state/

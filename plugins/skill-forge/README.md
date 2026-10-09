@@ -157,7 +157,7 @@ cat "${ZCODE_PLUGIN_DATA:-$TEMP/skill-forge}/nudge-state.json"
 |---|---|
 | Stop 钩子不做静默沉淀 | `decision:block` 会让模型多跑一轮，用户要等、token 要烧。所以每 session 最多推 1 次 |
 | 插件 hooks 在设置页只读 | 不能单独开关某一条，只能整体启用/停用插件 |
-| 项目级 hooks 不执行 | ZCode 安全策略，`<workspace>/.zcode/config.json` 里的 hooks 被整体忽略 |
+| 项目级 hooks 默认待信任 | `<workspace>/.zcode/config.json` 里的 hooks 不会直接执行：走 `admission → evaluateDispatch()`，`trustState` 默认 `pending_trust`，需逐仓库显式信任；声明摘要一变即 `stale_digest`。**不是被策略禁止**，只是门槛高 —— 这正是本插件用用户级 hooks 代替工作区钩子的原因 |
 | 改插件后需 bump version | `marketplace.json` 里的 `version` 不升，ZCode 不认为有更新（已实测） |
 | 用户级遮蔽项目级 | ZCode 既定行为，非本插件可控：同名 skill 时 `~/.zcode/skills/` 那份胜出 |
 | 工作区在 home 下不推 | 项目级落点会与用户级目录重合，`resolveSkillTarget()` 判定后直接放行 |

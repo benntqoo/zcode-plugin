@@ -13,7 +13,7 @@
 - 当前收录：**3** 个插件、**1** 个技能
   - 插件：[`skill-forge`](plugins/skill-forge/README.md) —— 多步任务后沉淀可复用 skill
   - 插件：[`memory-loop`](plugins/memory-loop/README.md) —— 闭合记忆回路：候选分流 → 蒸馏 → 会话注入
-  - 插件：[`project-guardrails`](plugins/project-guardrails/README.md) —— 补齐「工作区 hooks 不执行」留下的项目级约束缺口
+  - 插件：[`project-guardrails`](plugins/project-guardrails/README.md) —— 项目级约定与工具规则（用户级钩子代为执行）+ 会话开场注入待办账本索引
   - 技能：[`doc-protocol`](skills/doc-protocol/SKILL.md) —— 文档职责路由与进度真值协议（自包含：通用原则 + 落地层，内含 stock-agent 实例）
 - 远端：`git@github.com:benntqoo/zcode-plugin.git`（`main`）
 
@@ -34,7 +34,7 @@
 |---|---|---|---|
 | `skill-forge` | 1.1.2 | 多步任务后自动沉淀可复用 skill，并在使用中顺手修正已有 skill（2 个命令 + Stop/SessionStart 钩子） | [plugins/skill-forge/README.md](plugins/skill-forge/README.md) |
 | `memory-loop` | 1.0.0 | 消费上游 `stop-memory.js` 产出的记忆候选：Stop 按 cwd 分流到各项目并去重，SessionStart 把蒸馏后的 `MEMORY.md` 注入上下文。1 个命令 + 2 个钩子 | [plugins/memory-loop/README.md](plugins/memory-loop/README.md) |
-| `project-guardrails` | 1.0.0 | 项目级约束：读 `<repo>/.zcode/guardrails.json`，SessionStart 注入约定、PreToolUse 执行工具规则。补的是「ZCode 不执行工作区级 hooks」这个缺口。1 个命令 + 2 个钩子 | [plugins/project-guardrails/README.md](plugins/project-guardrails/README.md) |
+| `project-guardrails` | 1.1.1 | 项目级约定与工具规则 + **会话开场索引**。`entrypoints[]`（待办账本索引 + 体量状态）**零配置**：仓库里只要有账本载体就自动注入，无需写配置文件；`context[]` / `rules[]` 按需在 `<repo>/.agents/guardrails.json`（回退 `.zcode/`）声明。1 个命令 + 3 个钩子 | [plugins/project-guardrails/README.md](plugins/project-guardrails/README.md) |
 
 `memory-loop` 是「下游」性质的插件 —— 它假设上游已有某个钩子在写记忆候选（默认对接
 `~/.zcode/hooks/memory-candidates.jsonl`）。没有上游时它不会报错，只是什么也不做。
@@ -48,7 +48,7 @@
 
 | 技能 | 作用 | 文档 |
 |---|---|---|
-| `doc-protocol` | 文档职责路由与进度真值协议：每类事实只有一个权威载体、计数与状态禁抄进 prose、唯一待办账本、指令文件准入测试、会话开场/收尾清单。**一份自包含技能** —— 1~8 节通用原则（不预设文件名）+ 9 节落地层，内含 stock-agent 实例（载体映射 / 特有裁定 / 实证全文） | [skills/doc-protocol/SKILL.md](skills/doc-protocol/SKILL.md) |
+| `doc-protocol` | 文档职责路由与进度真值协议：每类事实只有一个权威载体、计数与状态禁抄进 prose、唯一待办账本、指令文件准入测试、会话开场/收尾清单；**热/温/冷分层 + 每个热层载体的体量预算**（账本 ≤15KB/40 行、指令文件 ≤60KB/150 条、归档双判据 2000 行/500KB）。**一份自包含技能** —— 1~8 节通用原则（不预设文件名）+ 9 节落地层，内含 stock-agent 实例（载体映射 / 特有裁定 / 实证全文）与体量闸脚本 | [skills/doc-protocol/SKILL.md](skills/doc-protocol/SKILL.md) · [assets/check-doc-budget.py](skills/doc-protocol/assets/check-doc-budget.py) |
 
 **安装方式与插件不同** —— 技能没有独立分发通道，需手动落到用户级技能根：
 
@@ -72,7 +72,7 @@ cp -r skills/doc-protocol ~/.agents/skills/doc-protocol      # 或 ln -s 做软�
 | ZCode 原生 | 后果 | 补足插件 | 补足手段 | 生效入口 |
 |---|---|---|---|---|
 | 记忆候选只写不读 | `memory-candidates.jsonl` 只增不减，全盘无消费者；原生记忆 `features.memory.enabled` 默认 `false` | `memory-loop` | 按 `cwd` 分流到各项目 → 手动蒸馏 → 会话开始注入 | `SessionStart` → `additionalContext` |
-| 工作区级 hooks **不执行** | 项目无法自带行为约束；`AGENTS.md` 只能写静态文字，管不住工具调用 | `project-guardrails` | 项目内写 `.zcode/guardrails.json`，由**用户级**插件代为执行 | `SessionStart` 注入约定 + `PreToolUse` 返回 `deny`/`ask` |
+| 工作区级 hooks **默认「待信任」** | 项目自带约束门槛高：需逐仓库显式信任，声明摘要一变即 `stale_digest` 失效；`AGENTS.md` 只能写静态文字，管不住工具调用，也**不会**在开场把待办账本推进上下文 | `project-guardrails` | 由**用户级**插件代读项目声明；`entrypoints`（账本索引 + 体量）**零配置**，`context` / `rules` 才需在 `.agents/guardrails.json`（回退 `.zcode/`）里写 | `SessionStart` 注入约定 + 账本索引 + `PreToolUse` 返回 `deny`/`ask` |
 | 经验不沉淀、skill 库无观测 | 踩过的坑下次重踩；description 撞预算后自动触发率骤降 | `skill-forge` | 任务收尾把经验写进 `<repo>/.zcode/skills/`，`/skill-audit` 盘点预算 | `Stop` + `SessionStart` + 2 个命令 |
 
 ### 由此推出的使用须知（使用者视角）
@@ -117,13 +117,16 @@ zcode-plugin/                          ← 市场源根目录
 │   │   └── hooks/                     ingest-candidates.mjs（Stop）+ recall-memory.mjs（SessionStart）
 │   └── project-guardrails/
 │       ├── commands/                  /guardrails
-│       └── hooks/                     session-rules.mjs + pretooluse-guard.mjs
+│       ├── hooks/                     session-rules.mjs + session-entrypoints.mjs + pretooluse-guard.mjs（+ 自带 lib/）
+│       └── test/                      entrypoints 直调验收（A/B 组 + A14 阈值合流）
 └── skills/                            技能源（独立于插件，手动安装到用户级技能根）
     ├── README.md                      安装方式与目录约定
     └── doc-protocol/                  一份自包含技能：通用原则 + 落地层
         ├── SKILL.md                   协议正文（1~8 节通用原则 / 9 节落地方法）
+        ├── assets/
+        │   └── check-doc-budget.py    体量闸（收尾第 0 步 + 开场注入的数据源）
         └── references/
-            ├── evidence.md            通用失效模式 E1~E11（抽象，无项目名与数字）
+            ├── evidence.md            通用失效模式 E1~E14（抽象，无项目名与数字）
             └── stock-agent.md         stock-agent 落地实例（载体映射 / 裁定 / 实证全文）
 ```
 
@@ -269,7 +272,7 @@ executionMode: type === "command" && async === true ? "background" : "foreground
 |---|---|
 | 本地目录市场 | **不感知文件变化** —— 改了插件内容必须 bump `version`，否则 ZCode 不认为有更新 |
 | hook 配置 | **会话启动时快照**，不热加载 —— 改完必须开新会话 |
-| 工作区级 hooks | **不执行**（ZCode 安全策略）—— 只有配置文件与插件里的 hook 会跑 |
+| 工作区级 hooks | **默认「待信任」**（`trustState: pending_trust`）—— 需显式信任才执行，可持久（`trusted_persistent`）；hook 声明摘要一变即 `stale_digest` 失效。插件与用户级配置的 hook 直接派发、无此闸 |
 | 安装缓存 | `~/.zcode/cli/plugins/cache/<marketplace-id>/<plugin>/<version>/` |
 | 市场缓存 | `~/.zcode/cli/plugins/marketplaces/<id>/` 是仓库的**副本**（自带 `.git`），不是软链 |
 | 插件数据目录 | `~/.zcode/cli/plugins/data/<name>@<marketplace>/`，钩子内由环境变量 `ZCODE_PLUGIN_DATA` 给出（回退 `CLAUDE_PLUGIN_DATA`）。**别落 tmpdir** —— 会被系统清 |
@@ -283,7 +286,7 @@ executionMode: type === "command" && async === true ? "background" : "foreground
 1. 同名遮蔽？（skill / command 是**用户级优先于工作区级**，不是项目覆盖全局）
 2. 没开新会话？（hooks 是快照）
 3. 没 bump version？（本地市场不感知变化）
-4. 是工作区级 hooks？（安全策略，根本不执行）
+4. 是工作区级 hooks 还在**待信任**？（默认 `pending_trust`，需显式信任；hook 声明摘要一变即 `stale_digest` 失效）
 5. 先读启动日志确认注册数 —— `hookCount` 是 `0` 就别再查脚本逻辑了，问题在清单 / 启用态
 
 ```bash

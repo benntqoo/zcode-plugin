@@ -19,7 +19,7 @@
    `agents` / `outputStyles` / `settings` 落在**「只记录、不执行」**那一档。[源码]
    ⇒ **用户说的「不像 WorkBuddy 有那么强的系统提示词能力」，根因就在这里**：不是提示词写得少，
    是**没有让插件往提示词里加东西的机制**。
-3. **hook 只有 7 个事件，且工作区级 hooks 被整体忽略。** 想靠钩子补，只能在很窄的窗口里做。[官方]
+3. **hook 只有 7 个事件，且工作区级 hooks 默认处于「待信任」。** 想靠钩子补，只能在很窄的窗口里做。[官方+源码]
 
 ⇒ 所以补足路线不是「写更好的提示词」，而是**用 hooks + commands + skills 把缺失的机制搭出来**。
 
@@ -101,16 +101,21 @@ PostToolUse · PostToolUseFailure · Stop
 | `SubagentStop` | 子代理行为完全不受控 |
 | `Notification` | 无法对接外部通知 |
 
-### 3.3 工作区级 hooks 被整体忽略 —— 安全姿态是反的 `[官方]`
+### 3.3 工作区级 hooks **默认待信任** —— 项目自带约束的门槛高 `[官方][源码]`
 
 | 资源 | 工作区级的待遇 |
 |---|---|
 | MCP servers | **自动信任、自动连接**（官方原文：workspace-scoped servers are trusted and auto-connected） |
-| **Hooks** | **一条都不执行**（安全策略） |
+| **Hooks** | **默认待信任**：需显式信任才执行（`trustState: pending_trust`），`trusted_persistent` 可持久；`bundleDigest` / `hookDeclarationDigest` 一变即 `stale_digest` 失效。**不是「策略禁止执行」** |
 | Skills / commands | 会加载，但**被用户级同名遮蔽** |
 | AGENTS.md | 会加载，且**后注入**（能覆盖用户级）—— 唯一「项目说了算」的通道 |
 
-⇒ 后果：**项目无法自带行为约束**。想给某个项目加"守卫"，只能靠 `AGENTS.md` 和 skills。
+> ⚠️ **2026-10-05 更正**：本节原写「**一条都不执行**（安全策略）/ fail-closed」，**是错的**。
+> 源码 `IQs()` 给项目 hook 挂的是 `admission → evaluateDispatch()`，而配置/插件 hook 直接派发
+> （`TQs()`）。差别很实际：前者**能做**，只是要逐仓库信任、改一次声明就重来；后者免这道闸。
+
+⇒ 后果：**项目自带行为约束的门槛高**。想给某个项目加「守卫」，要么逐仓库解决信任问题，
+要么只能靠 `AGENTS.md` / skills —— 后者管不住工具调用。
 ⇒ 这是**最大的可补足面**，也是本仓库最值得做的方向。
 
 ### 3.4 用户级优先于工作区级（skills / commands）`[官方]`
@@ -156,7 +161,7 @@ PostToolUse · PostToolUseFailure · Stop
 |---|---|---|---|---|---|
 | 1 | **skill 预算不可观测** | 命令 `/skill-budget`：扫所有 skill root，统计每个 `description` 字符数、按 root 分组求和、查同名遮蔽、报超预算与重复面 | command + skill（**无需 hook**） | 低 | **高** |
 | 2 | **记忆闭环无消费者** | 消费 `memory-candidates.jsonl`：去重 → 聚类 → 写 ZCode 原生 memory 或沉淀成 skill。用**异步钩子**做，不占用户一轮 | hook(`Stop`, `async`) + command | 中 | **高** |
-| 3 | **项目级约束无处安放**（工作区 hooks 不执行） | 一个用户级钩子，`SessionStart` 读 `<repo>/AGENTS.md` + `<repo>/.zcode/skills` 做自检并提示；配 `/project-rules` 命令管理 | hook + command | 中 | **高** |
+| 3 | **项目级约束无处安放**（工作区 hooks **默认待信任**，逐仓库开闸门槛高） | 一个用户级钩子，`SessionStart` 读 `<repo>/AGENTS.md` + `<repo>/.zcode/skills` 做自检并提示；配 `/project-rules` 命令管理 | hook + command | 中 | **高** |
 | 4 | **权限策略不可移植** | `PermissionRequest` 钩子可以 `behavior:"allow"` + `permissionUpdates:[{type:"addRules",...}]` —— **用插件分发允许清单**，比手工配 rules 可移植得多 | hook(`PermissionRequest`) | 中 | **高**（被低估）|
 | 5 | **压缩不可拦截** | 用 `PostToolUse` / `Stop` 增量维护一份「会话要点」文件，在 `SessionStart(compact)` 时回灌。取代不了 `PreCompact`，但能减轻压缩损失 | hook ×2 | 中 | 中 |
 | 6 | **子代理不能随插件分发** | 用 command + Task 工具模拟编排；把定义落到**用户级**子代理目录（插件里放不了） | command + skill | 中 | 中 |
@@ -168,7 +173,7 @@ PostToolUse · PostToolUseFailure · Stop
 |---|---|
 | 用插件替换系统提示 / 自定义输出风格 | `outputStyles` 是 `diagnosticOnly` —— 机制级不支持 |
 | 让项目覆盖个人偏好（同名 skill） | 用户级优先是硬编码规则 |
-| 给某个具体项目挂钩子 | 工作区级 hooks 被安全策略整体忽略 |
+| 让工作区 hooks **免信任**自动生效 | `IQs()` 给项目 hook 挂 `admission → evaluateDispatch()`，`trustState` 默认 `pending_trust`，且摘要一变即 `stale_digest`。要「零配置、随仓库走」只能绕：用户级插件读仓库里的声明文件（`project-guardrails` 的做法） |
 | LSP 集成、`mcpb` / `dxt` 包 | `lspServers` 不执行；三类包 `unsupported` |
 
 ---
