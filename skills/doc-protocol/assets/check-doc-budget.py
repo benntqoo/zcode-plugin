@@ -19,8 +19,11 @@
     1  存在**硬越线**（violations 非空）—— 收尾时先处理，再做其余
     2  用法 / 配置错误（含 `--config` 指向的文件不存在）
 
-`--root` 默认 cwd；`--config` 路径**相对 cwd**（不是相对 `--root`），不传则用 `DEFAULTS`。
-⚠️ 给了 `--config` 就**必须指向已存在的文件** —— 不存在即 exit 2，不要当可选参数随手加。
+`--root` 默认 cwd；`--config` 路径**相对 cwd**（不是相对 `--root`）。
+`--config` 缺省时**自动发现** `<root>/doc-budget.json`（与钩子 `loadBudgetConfig` 的读取行为一致）；
+root 下也没有该文件时才用 `DEFAULTS`。
+⚠️ 显式给了 `--config` 就**必须指向已存在的文件** —— 不存在即 exit 2，不要当可选参数随手加；
+自动发现的配置文件损坏同样 exit 2（闸是执法点，响亮失败优于静默回退默认）。
 
 设计要点（对齐 doc-protocol 第一/三/四/五/七节）
 - **热层才有硬预算**：指令文件、活账本。温/冷层只看归档线。
@@ -250,11 +253,12 @@ def _ledger_region(lines, spec):
     return start, end
 
 
-_INLINE_CODE = re.compile(r"`[^`\n]*`")
+_INLINE_CODE = re.compile(r"`+[^`\n]*`+")
 
 
 def _is_completed_row(row: str) -> bool:
-    """完成行 = 代码 span 之外存在 `~~`（行内反引号里引用的 `~~` 字面量不算）。"""
+    """完成行 = 代码 span 之外存在 `~~`（行内反引号里引用的字面波浪线不算，
+    含单/双反引号两种 span；钩子侧「成对 ~~」语义本就不受字面量影响）。"""
     return "~~" in _INLINE_CODE.sub("", row)
 
 
