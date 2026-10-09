@@ -1,4 +1,4 @@
-// PreToolUse 钩子 —— 执行 <repo>/.zcode/guardrails.json 里的工具规则。
+// PreToolUse 钩子 —— 执行 <repo>/.agents/guardrails.json（优先）或 <repo>/.zcode/guardrails.json 里的工具规则。
 //
 // matcher 在 hooks.json 里**故意省略**（= 匹配所有工具），因为规则可以针对任意工具。
 // 代价是每次工具调用都会 spawn 一次本进程，所以第一件事就是检查规则文件是否存在 ——

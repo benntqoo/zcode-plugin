@@ -1,5 +1,5 @@
 {
-  "description": "project-guardrails hooks: inject <repo>/.zcode/guardrails.json context on SessionStart, enforce its tool rules on PreToolUse. matcher is intentionally omitted on PreToolUse so rules can target any tool; the script exits immediately when no rules file exists.",
+  "description": "project-guardrails hooks: (1) SessionStart injects the repo's declared context from <repo>/.agents/guardrails.json (fallback .zcode/); (2) SessionStart (separate entry, independent failure domain) pushes the handoff ledger index + doc-size budget into context — the `entrypoints` feature; (3) PreToolUse enforces the declared tool rules. matcher is intentionally omitted on PreToolUse so rules can target any tool; every script exits immediately when its config file is absent.",
   "hooks": {
     "SessionStart": [
       {
@@ -9,6 +9,17 @@
             "type": "process",
             "command": "node",
             "args": ["${ZCODE_PLUGIN_ROOT}/hooks/session-rules.mjs"],
+            "timeoutMs": 5000
+          }
+        ]
+      },
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "process",
+            "command": "node",
+            "args": ["${ZCODE_PLUGIN_ROOT}/hooks/session-entrypoints.mjs"],
             "timeoutMs": 5000
           }
         ]

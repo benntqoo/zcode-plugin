@@ -1,14 +1,58 @@
 // 项目级约束的读取与匹配。
 //
-// 规则来源：<repo>/.zcode/guardrails.json
-// 为什么不用工作区级 hooks 直接表达：**ZCode 出于安全策略不执行工作区级 hooks**
-// （源码里 fail-closed，reasonCode = workspace_hooks_blocked_untrusted）。
-// 所以「项目自带行为约束」只能靠一个**用户级**插件代理读取项目里的声明文件。
+// 规则来源：<repo>/.agents/guardrails.json（优先）或 <repo>/.zcode/guardrails.json
+//
+// 为什么不用工作区级 hooks 直接表达：工作区级 hooks **默认处于「待信任」**
+// （trustState: pending_trust —— 源码 IQs() 给它挂了 admission → evaluateDispatch()），
+// 要用户显式信任才执行，且 hook 声明摘要一变就 stale_digest 失效。
+// 用户级插件钩子则直接派发、不过这道闸。所以「项目自带行为约束」用用户级插件代理读取。
+//
+// 为什么首选 `.agents/`：`.zcode/` 常被仓库的 .gitignore 吃掉（如 stock-agent 的 `.zcode/*`），
+// 配置不入库 ⇒ 换台机器协议就丢，与「跨会话/跨 agent 接续」直接冲突。
+// `.agents/` 是跨 agent 共享目录，实测未被忽略。`.zcode/` 保留为回退（零破坏）。
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-export const RULES_REL = ".zcode/guardrails.json";
+/**
+ * 项目声明的候选落点，**按序取第一个存在且可解析的**。
+ * `.agents/` 在前（可入库），`.zcode/` 回退。
+ */
+export const RULES_RELS = [".agents/guardrails.json", ".zcode/guardrails.json"];
+
+/** 兼容旧名（v1.0.0 只有单路径）。 */
+export const RULES_REL = RULES_RELS[1];
+
+/**
+ * 找并解析项目配置文件。找不到 → null。
+ *
+ * 用 `continue` 而非 `return`：`.agents/` 存在但 JSON 坏时，仍应回退试 `.zcode/`。
+ * 两处都坏也不算错 —— fail-open 是刻意的（见 loadGuardrails）。
+ */
+export function readGuardrailsFile(root) {
+  for (const rel of RULES_RELS) {
+    const path = join(root, rel);
+    if (!existsSync(path)) continue;
+
+    let raw = "";
+    try {
+      raw = readFileSync(path, "utf-8");
+    } catch {
+      continue;
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      continue;
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) continue;
+
+    return { parsed, path, rel };
+  }
+  return null;
+}
 
 /**
  * 读并规范化规则文件。
@@ -18,23 +62,9 @@ export const RULES_REL = ".zcode/guardrails.json";
  * 读不到就当没配，绝不能因为配置写错而把整个会话卡死。
  */
 export function loadGuardrails(root) {
-  const path = join(root, RULES_REL);
-  if (!existsSync(path)) return null;
-
-  let raw = "";
-  try {
-    raw = readFileSync(path, "utf-8");
-  } catch {
-    return null;
-  }
-
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return null;
-  }
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+  const found = readGuardrailsFile(root);
+  if (!found) return null;
+  const { parsed, path } = found;
 
   const context = Array.isArray(parsed.context)
     ? parsed.context.filter((s) => typeof s === "string" && s.trim())

@@ -1,7 +1,7 @@
 {
   "name": "project-guardrails",
-  "version": "1.0.0",
-  "description": "Per-project guardrails that work around ZCode ignoring workspace-scoped hooks: declare constraints and tool rules in <repo>/.zcode/guardrails.json and have a user-level plugin enforce them.",
+  "version": "1.1.1",
+  "description": "Per-project guardrails via a user-level plugin. Zero-config by default: if the repo has a handoff ledger carrier, SessionStart automatically injects the ledger index + doc-size budget (convention over configuration). Declare `context`, tool rules and `entrypoints` in <repo>/.agents/guardrails.json (fallback .zcode/) to override or to turn it off (`\"entrypoints\": []`).",
   "author": {
     "name": "Jrtou"
   },
@@ -9,6 +9,7 @@
   "keywords": [
     "hooks",
     "guardrails",
+    "entrypoints",
     "safety",
     "project-config"
   ],

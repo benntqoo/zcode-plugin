@@ -1,6 +1,7 @@
-// SessionStart 钩子 —— 把 <repo>/.zcode/guardrails.json 的 context 注入上下文。
+// SessionStart 钩子 —— 把 <repo>/.agents/guardrails.json（优先）或 <repo>/.zcode/guardrails.json 的 context 注入上下文。
 //
-// 补的是这个缺口：**工作区级 hooks 被 ZCode 整体忽略**，所以项目无法自带行为约束。
+// 补的是这个缺口：工作区级 hooks **默认处于「待信任」**（需逐仓库显式信任才执行，
+// 且 hook 声明摘要一变即 stale_digest 失效），所以「项目自带行为约束」的门槛很高。
 // 这个用户级插件代替工作区钩子去读项目里的声明文件，于是「项目说了算」重新成立。
 //
 // 与用户级 guard-bash.js 的分工：

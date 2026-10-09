@@ -16,16 +16,22 @@ export function normPath(p) {
   return s;
 }
 
+/** 项目根标记：`.git` / `.zcode` / `.agents` 同等权重，就近者赢。 */
+const ROOT_MARKERS = [".git", ".zcode", ".agents"];
+
 /**
- * 从 start 向上找项目根：**就近的标记赢**，`.git` 与 `.zcode` 同等权重。
+ * 从 start 向上找项目根：**就近的标记赢**，三个标记同等权重。
  *
- * 为什么不是「.git 绝对优先」：ZCode 自己的发现顺序是越深的 `.zcode` 优先级越高。
- * 落点必须与之一致，否则文件写了不生效。
+ * 为什么不是「.git 绝对优先」：ZCode 自己的发现顺序是越深的 `.zcode` 优先级越高
+ * （它同样认 `.agents`）。落点必须与之一致，否则文件写了不生效。
+ *
+ * ⚠️ 加 `.agents` 的影响面：只影响「有 `.agents/` 但既无 `.git` 也无 `.zcode`」的目录 ——
+ * 原先会继续向上、现在就地定根。常见仓库两者都有，行为不变。
  */
 export function findProjectRoot(start) {
   let dir = resolve(start);
   for (let i = 0; i < MAX_UP; i++) {
-    if (existsSync(join(dir, ".git")) || existsSync(join(dir, ".zcode"))) return dir;
+    if (ROOT_MARKERS.some((m) => existsSync(join(dir, m)))) return dir;
     const parent = dirname(dir);
     if (parent === dir) break;
     dir = parent;
