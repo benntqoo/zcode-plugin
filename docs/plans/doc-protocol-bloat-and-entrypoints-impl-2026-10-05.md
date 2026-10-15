@@ -10,8 +10,10 @@
   - `docs/reviews/doc-protocol-design-review-2026-10-04.md`（接入层未达成：技能按需调用、开场不加载）
 - 状态：
   - **Part A（协议改动）—— ✅ 已落盘**（`skills/doc-protocol/SKILL.md` + `references/*`，本次）
-  - **Part B（体量闸脚本）—— ✅ 已写**（`skills/doc-protocol/assets/check-doc-budget.py`，随技能分发；**不复制进目标仓库**，2026-10-05 更正）
-  - **Part C（插件 entrypoints）—— ⬜ 待实施**（本文档的规格部分）
+  - **Part B（体量闸脚本）—— ✅ 已写**（`skills/doc-protocol/assets/check-doc-budget.py`，随技能分发；
+    目标仓库侧形态见 9.1 第 3 条「实例债务」，2026-10-16 定稿）
+  - **Part C（插件 entrypoints）—— ✅ 已实施**（2026-10-05 实现、2026-10-09 上线 v1.1.1 并在真实会话
+    实证；下方规格段保留为设计记录）
   - 本文件本身**未改动任何插件代码**。
 
 ---

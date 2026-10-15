@@ -1,13 +1,21 @@
 # HANDOFF — zcode-plugin 市场
 
-> 更新：2026-10-09
+> 更新：2026-10-16
 > 状态：仓库定位已扩为「**插件 + 技能开发库**」—— `plugins/` 3 个插件、`skills/` 1 个技能。
 > **三个插件均已安装生效**：`skill-forge` 1.1.2、`memory-loop` 1.0.0、`project-guardrails` 1.1.1
-> （后者 2026-10-09 装毕并完成会话内验证，见「十七」）。
+> （仓库源分别是 1.1.2 / **1.0.1** / **1.1.2** —— 后两者待重装，见账本）。
 > 新会话直接从这里接。
 >
 > 第一 ~ 十节是 `skill-forge` 的交接笔记；新插件见「十一」；`skills/` 目录与 doc-protocol 见「十二」
 > （**二次整合为一份自包含技能见「十二.6」**）。
+
+**最新变更（2026-10-16）**：
+
+- **技能双源归一（P0 修复）**：`doc-protocol` 的安装态（2026-10-09 被直接编辑）与仓库源（2026-10-05 版）
+  曾是**两条谱系、谁都不是超集**；现以仓库为源合并两侧独有内容，`cp -r` 重铺安装态。详见「十九」。
+- **假绿修复回流（P0 修复）**：`documents[].required` 进技能 `assets/check-doc-budget.py`
+  （账本载体 `true` / 指令文件 `"warn"`）；stock-agent 的 `scripts/` 副本回归为**严格副本 + 头注**。
+- **执行层首次实证**：entrypoints 注入、Stop 分流、skill-forge 节流三项在真实会话中被取到证据。
 
 **最新变更（2026-10-09）**：
 
@@ -38,10 +46,9 @@
 
 | 状态 | 事项 | 来源段 | 下一步 / 触发线 / 验证日期 | 备注 |
 |---|---|---|---|---|
-| ⏳ 验证点 | 开场注入切换到真账本 | 十八 | 下一会话开场核对 `[entrypoints]` 块：只列本表行、死行 0 | doc-budget.json 生效后首个会话 |
+| ⏳ 验证点 | 开场注入切换到真账本 | 十八 | 下一次 **cwd=`zcode-plugin`** 的会话开场核对 `[entrypoints]` 块：只列本表行、死行 0 | 机制已在 stock-agent 侧实证（十九）；本仓库尚无该 cwd 的会话 |
 | 🔴 待办 | memory-loop 重装 1.0.1 | 十八 | GUI 更新 + 开新会话 | 仅 README 措辞，无功能变化 |
 | 🔴 待办 | project-guardrails 重装 1.1.2 | 十八补记 | GUI 更新 + 开新会话 | 仅测试文件差异，可与 1.0.1 顺手一起 |
-| 🟡 挂起 | stock-agent 首次账本投影 | 十六 | 触发线：头头在 stock-agent 侧执行 | 以该仓库账本为准 |
 
 ---
 
@@ -394,8 +401,11 @@ D:\Code\zcode-plugin\                   ← ZCode「Add marketplace」指向这�
 
 ### 未验证（别当结论）
 
-- **两个插件都没有在真实会话里跑过。** 全部证据来自对脚本的直接调用；
-  「ZCode 真的会在每轮 Stop / 每次工具调用时调它们」这一步**没有实测**。
+- ~~**两个插件都没有在真实会话里跑过。**~~ **已证伪（2026-10-16）**：`rollout` 会话记录里取到
+  「有 57 条未蒸馏候选…」提示与「**[entrypoints] 待办账本（handoff.md:7-43 行）待办 30 项**」整块
+  注入（cwd 均为 stock-agent）；`plugins/data/memory-loop@zcode-plugin/ingest-state.json` =
+  `consumed 397`（Stop 分流真跑）；`skill-forge/nudge-state.json` 计 6 个 session。
+  **仍未证**：本仓库（cwd=`zcode-plugin`）的开场注入（已入账本 ⏳）。
 - `userConfig` 虽属 runnable 档，但**它的值以什么形式进入钩子进程未验证**（env 名？`${}` 替换？）。
   所以两个插件**都没用 userConfig**，改用环境变量 + 项目内约定文件，绕开这个未知。
 - `PreToolUse` 全量 matcher 的**真实性能影响未测**（只有单次 85 ms 这个数字）。
@@ -761,3 +771,37 @@ A8 语义随之改写（「无配置」≠「无输出」了）。
 A19/A19b config 自动发现），37 → **42** 全绿 —— 共享 fixture 不加行（A4c/B3/A14 对它计数），
 新开 dp2 fixture 并自带 `.zcode/` 标记防上溯。测试文件变更 ⇒ guardrails bump **1.1.2**（运行时零差异，
 重装可与 1.0.1 合并做）。安装态脚本已再次同步。
+
+## 十九、技能双源归一 + 假绿修复回流（2026-10-16）
+
+**触发**：一次只读盘点发现 `skills/doc-protocol/`（仓库源）与 `~/.agents/skills/doc-protocol/`
+（安装态）**已分叉成两条谱系**，且体量闸脚本两侧各有对方缺失的判据 —— 单一真值被破。
+
+**证据（实测）**
+- `diff -r` 双向都有独有内容：仓库源有 2026-10-05 的「三条硬约束 + `assets/` 不复制进仓库 +
+  `--config` 语义 + A18 双反引号死行修复」；安装态（2026-10-09 11:22–11:25 被**直接编辑**）有
+  stock-agent 实况（`scripts/check-doc-budget.py` 落库、275 段、单一 5 列账本、legacy 分组退役）
+  与「两条硬约束」。
+- `check-doc-budget.py`：技能版缺「必需文档缺失 → violation」（stock-agent 2026-10-13 `7ea65661`
+  加的假绿根治）；stock-agent 副本缺 A18 与 `--config` 自动发现。**谁都不是超集。**
+
+**处置**
+1. **以仓库源为源**合并：`SKILL.md` 9.1 第 3 条补「实例债务」三条口径（严格副本 + 头注 sha256 +
+   本地改动先回流）；9.2 与 `references/stock-agent.md` 回写 10-09 / 10-13 实况；
+   `references/evidence.md` 新增 **E15**（参考实现与实例双向漂移，抽象、无项目名）。
+2. **假绿修复回流** `assets/check-doc-budget.py`，并推广为可配的 `documents[].required`
+   （`true` 记 violation / `"warn"` 记 warning / `false` 静默跳过）：硬红只留给**账本载体缺席**
+   （root 指错目录的假绿），指令文件缺席降为 warning（不用 `AGENTS.md` 的仓库合法）。
+   技能版自此是两侧**超集**。
+3. **stock-agent 副本回归严格副本**：`scripts/check-doc-budget.py` = 技能版 + 8 行头注
+   （派生版本 + sha256）；剔除头注后与技能版**逐字节相同**。备份
+   `.workbuddy/backup/stock-agent-check-doc-budget-20261016/`（before/after 各一份）。
+   该仓库改动**未提交**（其 `handoff.md` 另有并发未提交改动，不与本次混提）。
+4. 安装态 `cp -r` 重铺后 `diff -r` 为空；`assets/__pycache__` 清理（仓库与安装态两处）。
+
+**验证**
+- `entrypoints.test.sh` **42/42** 全绿（脚本改动未破坏 A14 的两侧一致断言）。
+- 假绿自测：空目录 `--root` → `handoff.missing` violation、exit 1；本仓库 → 账本 1048 B / 4 行 /
+  0 死行，附 `instructions.missing` warning（本仓库无 `AGENTS.md`，该面显式标为「未受检」）。
+- stock-agent 侧切换前后**同一组** violations / warnings（`ledger.bytes`、`addenda.per_segment`、
+  `ledger.items`、`ledger.row_bytes`），仅行数读数修正：33 → 32（表头行不再计入数据行）。

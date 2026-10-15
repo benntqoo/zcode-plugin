@@ -29,15 +29,21 @@ root 下也没有该文件时才用 `DEFAULTS`。
 - **热层才有硬预算**：指令文件、活账本。温/冷层只看归档线。
 - **账本不变量**：活表**不得**含 `~~` 行（未完成投影）。这是唯一可机械校验的强约束。
 - **软 / 硬分开**：条数、单行长度是 soft（warning）；字节、行数、死行数是 hard（violation）。
+- **缺文件不是通过**：`documents[].required` 控制缺席语义 —— `true` 记 violation（典型＝
+  账本载体，`--root` 指错目录时全部缺席＝假绿，2026-10-13 实证）；`"warn"` 记 warning
+  （典型＝不该强制存在的指令文件）；`false` 静默跳过。
 - 纯标准库；不写任何文件；只读。
 
 本文件是**参考实现**，随 doc-protocol 技能分发（`assets/`）——
 **不要在目标仓库里复制副本**：技能一改副本就陈旧，等于同一个脚本两个真源。
 阈值/文件名差异用 `--config <repo>/doc-budget.json` 表达；默认值已是通用值，多数仓库零配置即用。
+⚠️ `--root` 必须显式指向仓库根：脚本以 `--root` 解析所有相对路径，**不在仓库根跑就是假绿源**
+（缺文件已记 violation，但别依赖闸来替你把 cwd 摆正）。
 
 例外：目标仓库有 **CI / pre-commit 等独立于技能安装的消费方**时，才在仓库建**实例**，
-并在文件头注明「派生自 `doc-protocol/assets/check-doc-budget.py`@<技能版本或日期>」，技能修订时同步
-—— 那是**实例**，不是无脑复制。
+并在文件头注明「派生自 `doc-protocol/assets/check-doc-budget.py`@<技能版本或日期>` + 该版本文件的
+sha256」，技能修订时同步 —— 那是**实例**，不是无脑复制。**实例必须是技能版的超集**：
+本地改动（如新增判据）必须先回流技能 `assets/`，再向下覆盖 —— 否则又是双向漂移（2026-10-16 实证）。
 """
 
 from __future__ import annotations
@@ -54,18 +60,21 @@ import unicodedata
 # ---------------------------------------------------------------------------
 DEFAULTS: dict = {
     # 热层文档：字节 + 行数硬预算；maxInstructions 为 standing instruction 条数
+    # required：true=缺席记 violation；"warn"=缺席记 warning；false=静默跳过
     "documents": [
         {
             "id": "handoff",
             "path": "handoff.md",
             "maxLines": 2000,
             "maxBytes": 512000,          # 500 KB
+            "required": True,            # 账本载体缺席 = root 指错目录（假绿）
         },
         {
             "id": "instructions",
             "path": "AGENTS.md",
             "maxBytes": 61440,           # 60 KB（留 40% 余量对抗 100 KB 静默截断）
             "maxInstructions": 150,
+            "required": "warn",          # 不用指令文件的仓库合法；缺席说明该面未受检
         },
     ],
     # 活账本：交接待办表
@@ -177,8 +186,26 @@ def check_documents(root: str, specs) -> tuple[list, list, dict]:
         did = spec.get("id") or spec.get("path")
         path = os.path.join(root, spec["path"])
         info = _read(path)
-        entry = {"path": spec["path"], "exists": info is not None}
+        entry = {"path": spec["path"], "exists": info is not None,
+                 "required": spec.get("required", False)}
         if info is None:
+            # 2026-10-13（stock-agent 实证，2026-10-16 回流技能）：缺文件必须是红，
+            # 不是空过 —— 一次 CWD 相对 root 的错跑让三份文档全缺却报 "ok"。
+            req = spec.get("required", False)
+            if req is True:
+                violations.append({
+                    "code": f"{did}.missing", "object": did,
+                    "actual": 0, "limit": 1,
+                    "message": (f"{spec['path']}: 必需文档缺失 —— root 指错目录=假绿, "
+                                "用 --root 显式指向仓库根"),
+                })
+            elif req == "warn":
+                warnings.append({
+                    "code": f"{did}.missing", "object": did,
+                    "actual": 0, "limit": 1,
+                    "message": (f"{spec['path']}: 不存在 —— 该面未受检"
+                                "（本就无此文件的仓库可忽略；确定不要则配 required:false）"),
+                })
             report[did] = entry
             continue
         text, size, lines = info
@@ -480,7 +507,8 @@ def _print_summary(result: dict) -> None:
     print(f"  root: {r['root']}", file=e)
     for did, d in (r.get("documents") or {}).items():
         if not d.get("exists"):
-            print(f"  [跳过] {did}: 不存在", file=e)
+            mark = "[缺失·红]" if d.get("required") is True else "[跳过]"
+            print(f"  {mark} {did}: 不存在", file=e)
             continue
         extra = f" / {d['instructions']} 条指令" if "instructions" in d else ""
         print(f"  {did}: {d['lines']} 行 / {d['bytes']} B{extra}", file=e)

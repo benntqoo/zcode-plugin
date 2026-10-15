@@ -23,6 +23,15 @@ ln -s "$(pwd)/skills/<name>" ~/.agents/skills/<name>
 
 更新：复制方式需重新 `cp`；软链方式免更新。装完**开新会话或 `/clear`** 才生效。
 
+**改完正文必须同步安装态并核对**（2026-10-16 立的判据 —— 曾因「只改一侧」分叉成两条谱系）：
+
+```bash
+cp -rf skills/<name>/. ~/.agents/skills/<name>/      # 同步
+diff -r skills/<name> ~/.agents/skills/<name>        # 必须无输出
+```
+
+`diff` 有输出即为**双源**：谁都不是超集，两侧各自演化（实例见 `doc-protocol/references/evidence.md` E15）。
+
 ## 落点约定
 
 每个技能一个目录，`SKILL.md` 必需，其余按需：
@@ -40,7 +49,8 @@ skills/<name>/
 - **`assets/` 里的脚本随技能分发** —— 用户 `cp -r` 安装技能时会一并带过去（例如 `doc-protocol` 的 `assets/check-doc-budget.py`）。
   **不要在目标仓库里另存一份副本** —— 那是同一个脚本两个真源，技能更新后仓库副本陈旧。
   调用写**技能安装态路径**（`~/.agents/skills/<skill>/assets/<script>`）；仓库侧只放**配置**。
-  仅当目标仓库有 CI / pre-commit 等**独立于技能安装**的消费方时，才在仓库建**实例**并在文件头注明派生来源（见 `doc-protocol` 9.1 第 3 条）。
+  仅当目标仓库有 CI / pre-commit 等**独立于技能安装**的消费方时，才在仓库建**实例**：头注须带派生版本 +
+  文件 sha256，且**本地做的改进先回流技能 `assets/` 再向下覆盖**（严格副本口径，见 `doc-protocol` 9.1 第 3 条）。
 - 详细规范见官方 `skill-creator` 技能与根 `README.md`
 
 ## 当前收录

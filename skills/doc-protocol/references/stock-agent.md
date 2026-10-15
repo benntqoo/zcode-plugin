@@ -57,10 +57,20 @@
   + 外部最佳实践对照 `docs/plans/doc-protocol-bloat-control-optimized-2026-10-05.md`）：
   ① 账本改**未完成投影** —— 完成即投影到冷层 `docs/archive/handoff-ledger-<YYYY-MM>.md`（append-only）
   + 从活表删除；② 活账本补**字节 / 行数 / 条数**预算，指令文件补**字节 / 条数**预算；
-  ③ 阈值落成体量闸脚本 `assets/check-doc-budget.py`（随技能分发；**不复制进本仓库**，
-  2026-10-05 更正，原写「落成 `scripts/check-doc-budget.py`」）；
+  ③ 阈值落成体量闸脚本（当日裁定「随技能分发、**不复制进本仓库**」——原写「落成
+  `scripts/check-doc-budget.py`」，当场更正）；
   ④ 归档线补 **500 KB** 判据；⑤ 新增**冷层分片**（单片 ≤500 KB）与「陈旧即删」。
   > 触发这条的原因：三个阈值全部「越线未执行」；账本 60% 是死行、无出口；AGENTS.md 已用 91.5% 注入预算。
+- **2026-10-09**（275 段）：体量闸**以实例落库** `scripts/check-doc-budget.py`
+  —— 实际做法与 2026-10-05 的③相反，故**以实况为准**并改按 `SKILL.md` 9.1 第 3 条的
+  **实例债务**口径管理（严格跟随技能版；本地改动先回流技能）。同日账本投影落地：
+  44 条完成行清偿冷层、legacy 三小节退役、账本改**单一 5 列表**；首跑基线 = 5 红。
+- **2026-10-13**（`7ea65661`）：修**假绿** —— 必需文档缺失从「空过」改为 `violation`
+  （一次 CWD 相对 root 的错跑让三份文档全缺却报 `ok`）。
+- **2026-10-16**：假绿修复**回流技能** `assets/`（该判据推广为 `documents[].required`：
+  账本载体 `true` / 指令文件 `"warn"` / 可选 `false`），技能版自此成为两侧**超集**。
+  同日记录：两条谱系曾各自演化（技能安装态 10-09 被直接编辑、实例侧 10-13 加了新判据），
+  **谁都不是超集** —— 见 `SKILL.md` 9.1 第 3 条与 `references/evidence.md` E15。
 - `AGENTS.md:7` 有 doc-protocol 触发指引；`AGENTS.md:244` 要求 agentmemory 守本协议口径。
 
 ## 四、本仓库的事故实证（E1~E11）
@@ -93,11 +103,13 @@
 | 归档单片 | ≤ 500 KB（超即开新片） | 2026-10-05 新增（v1 已 476 KB） |
 | 冷层账本 | `docs/archive/handoff-ledger-<YYYY-MM>.md`（append-only） | 2026-10-05 新增（账本投影出口） |
 
-**体量检查脚本**：以**技能安装态路径**调用 ——
-`python ~/.agents/skills/doc-protocol/assets/check-doc-budget.py --root .`。
-**不在本仓库放副本**（脚本随技能分发，单一真源；默认阈值即本仓库阈值，零配置）。
+**体量检查脚本**：仓库内**实例** `scripts/check-doc-budget.py` ——
+`python scripts/check-doc-budget.py`（`--root` 默认 cwd，**必须在仓库根跑**）。
+它是**实例债务**（`SKILL.md` 9.1 第 3 条）：内容 = 技能 `assets/` 的严格副本 + 头注标派生来源与 sha256；
+**本地判据改动先回流技能 `assets/` 再向下覆盖**（2026-10-16 起技能版为超集）。
 收尾**第 0 步**跑，退出码非零即红；输出同时供 `project-guardrails` 会话开场注入
 （`.agents/guardrails.json` 的 `entrypoints` —— 该侧在 **hook 内用 Node 现算**，不 shell 出去跑 Python）。
+阈值差异走仓库根 `doc-budget.json`（该仓库暂无此文件 ⇒ 两侧同走 `DEFAULTS`）。
 
 **实测基线（会过期，勿引用；只用于判断趋势）**
 
