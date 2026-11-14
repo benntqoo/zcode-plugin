@@ -2,10 +2,8 @@
 
 > 更新：2026-11-14
 > 状态：仓库定位已扩为「**插件 + 技能开发库**」—— `plugins/` 4 个插件、`skills/` 1 个技能。
-> **三个插件均已安装生效**：`skill-forge` 1.1.2、`memory-loop` 1.0.0、`project-guardrails` 1.1.1
-> （仓库源分别是 **1.1.3** / **1.0.1** / **1.1.2** —— 三者均待重装/更新：后两者本有功能滞差，
-> skill-forge 因 21 节 hooks 声明清理升 1.1.3，见账本）。
-> 新增 `impeccable`（上游 pbakaus/impeccable 的 vendor 适配，仓库源 4.9.1）**待安装**，见「二十」。
+> **四个插件均已安装生效，且安装态 = 仓库源**（2026-11-14 `diff -r` 全绿实测）：`skill-forge` 1.1.3、
+> `memory-loop` 1.0.1、`project-guardrails` 1.1.2、`impeccable` 4.9.1（E2E 验收见「二十二」）。
 > 新会话直接从这里接。
 >
 > 第一 ~ 十节是 `skill-forge` 的交接笔记；新插件见「十一」；`skills/` 目录与 doc-protocol 见「十二」
@@ -48,10 +46,7 @@
 
 | 状态 | 事项 | 来源段 | 下一步 / 触发线 / 验证日期 | 备注 |
 |---|---|---|---|---|
-| 🟡 挂起 | impeccable 上游口径反馈 issue（3 条线索已本地核实） | 二十二 | 触发线=用户拍板是否发 pbakaus/impeccable | 可代拟全文：overused-font 双口径 / low-contrast 端点归因 / nested-cards 判据文档化 |
-| 🔴 待办 | skill-forge 更新 1.1.3 | 二十一 | GUI 更新 + 开新会话 | hooks 冗余声明清理（行为不变）；升版以触发更新提示 |
-| 🔴 待办 | memory-loop 重装 1.0.1 | 十八 | GUI 更新 + 开新会话 | 21 节顺带清理 hooks 冗余声明 |
-| 🔴 待办 | project-guardrails 重装 1.1.2 | 十八补记 | GUI 更新 + 开新会话 | 21 节顺带清理 hooks 冗余声明，可与 1.0.1 顺手一起 |
+| 🟡 挂起 | impeccable 上游口径反馈 issue | 二十二 | 草稿已备 [docs/upstream/impeccable-detector-issue-draft-2026-11-14.md](docs/upstream/impeccable-detector-issue-draft-2026-11-14.md)，待用户提交，提交后回填 issue 链接 | 英文正文可整段复制；维护者要求拆分时各节自带复现 |
 
 ---
 
@@ -931,3 +926,11 @@ critique 实测 → P0 修复（GUI 引导 3 轮：只修 2 条 P0 / 文案对�
 **GUI agent 的两处裁定记录**：「card-in-card 检测器根本没有这条判据」系过度归因（实测规则存在，
 真因是夹具弱形态）；修卡面超出了「只改 muted 颜色」的字面范围但数学上必要（玻璃卡合成底任何
 文字色上限 ≈3.9:1 < AA 4.5:1）且已披露副作用 —— 两者均接受。
+
+**补记1（3 项 GUI 更新完成 + 上游 issue 草稿）**：`installed_plugins.json` 实证三插件均于
+2026-11-14 13:21 更新到仓库源版本（skill-forge 1.1.3 / memory-loop 1.0.1 / project-guardrails 1.1.2），
+四插件安装缓存 `diff -r` 全绿（hooks 冗余声明清理已到达安装态）—— 账本三行完成投影，
+头部安装态改写为「四插件已生效且 = 仓库源」。impeccable 上游 issue 草稿落
+[docs/upstream/impeccable-detector-issue-draft-2026-11-14.md](docs/upstream/impeccable-detector-issue-draft-2026-11-14.md)
+（英文正文可整段复制进 https://github.com/pbakaus/impeccable/issues/new ，含复现片段；
+🟡 行留待用户实际提交后回填链接）。

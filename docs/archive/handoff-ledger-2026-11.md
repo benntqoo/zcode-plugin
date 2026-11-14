@@ -5,3 +5,6 @@
 
 - 2026-11-14 | 开场注入切换到真账本 ✅ 已验证（第 20 段会话，cwd=`zcode-plugin`）：SessionStart `[entrypoints]` 块列出账本 3 行与表一致、无死行、体量状态在场 | 原账本行（§十八）
 - 2026-11-14 | impeccable 插件安装 + 引擎预热 + E2E 验收 ✅ 全链路通过（第 22 段：设计钩子 editCount=4 / detect 修前 4→修后 2 / 负对照 0 命中；夹具三件套定稿 `D:\Code\impeccable-test\`） | 原账本行（§二十）
+- 2026-11-14 | skill-forge 更新 1.1.3 ✅ GUI 更新完成（13:21，安装缓存与仓库源 `diff -r` 全绿） | 原账本行（§二十一）
+- 2026-11-14 | memory-loop 重装 1.0.1 ✅ 同批 GUI 更新完成，diff 全绿 | 原账本行（§十八）
+- 2026-11-14 | project-guardrails 重装 1.1.2 ✅ 同批 GUI 更新完成，diff 全绿 | 原账本行（§十八补记）
