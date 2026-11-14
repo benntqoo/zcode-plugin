@@ -1,0 +1,18 @@
+{
+  "name": "taste-skill",
+  "version": "2.5.1",
+  "description": "Anti-slop frontend builds for ZCode, vendored from upstream taste-skill: the design-taste-frontend skill (deal-driven palettes/type/layouts, real photos and product UI, real-browser checker), a /taste-skill command router, and a Stop finish-gate hook that holds the session until the armed build passes.",
+  "author": {
+    "name": "Jrtou"
+  },
+  "license": "MIT",
+  "keywords": [
+    "frontend",
+    "design",
+    "landing-page",
+    "web-design",
+    "anti-slop"
+  ],
+  "commands": "commands",
+  "skills": "./skills"
+}

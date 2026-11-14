@@ -1,0 +1,21 @@
+{
+  "description": "taste-skill finish gate: on Stop, the vendored gate engine runs the browser checks for an armed build and blocks (Claude-protocol decision JSON, always exit 0) until GATE: PASS. With no armed build it exits almost immediately (filesystem scan only, no browser). The 9.5-minute self-budget fits the 600000ms timeout, mirroring upstream's 600s Stop hook. Any internal crash lets the stop through by design.",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "process",
+            "command": "node",
+            "args": [
+              "${ZCODE_PLUGIN_ROOT}/skills/taste-skill/scripts/gate.mjs",
+              "--hook",
+              "claude"
+            ],
+            "timeoutMs": 600000
+          }
+        ]
+      }
+    ]
+  }
+}
