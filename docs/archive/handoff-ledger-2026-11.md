@@ -8,3 +8,4 @@
 - 2026-11-14 | skill-forge 更新 1.1.3 ✅ GUI 更新完成（13:21，安装缓存与仓库源 `diff -r` 全绿） | 原账本行（§二十一）
 - 2026-11-14 | memory-loop 重装 1.0.1 ✅ 同批 GUI 更新完成，diff 全绿 | 原账本行（§十八）
 - 2026-11-14 | project-guardrails 重装 1.1.2 ✅ 同批 GUI 更新完成，diff 全绿 | 原账本行（§十八补记）
+- 2026-11-15 | taste-skill 安装 + 首个真实建站 E2E ✅ GUI 实测 `GATE: PASS`（修正轨迹 29→20→12→6→5→1→PASS，跨 4 个 build，无 waiver、无改 kit；截图五宽度+layout/tiles 落盘；brief 外事实抽查干净；Stop 桥生产实录 gate.json history `hook host=claude decision=allow`；安装缓存与仓库源 `diff -r` 全绿；调试打法沉淀 `taste-skill-test\.zcode\skills\taste-skill-gate-debug`） | 原账本行（§二十三）

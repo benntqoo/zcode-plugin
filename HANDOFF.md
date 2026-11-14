@@ -47,6 +47,7 @@
 | 状态 | 事项 | 来源段 | 下一步 / 触发线 / 验证日期 | 备注 |
 |---|---|---|---|---|
 | 🟡 挂起 | impeccable 上游 issue 跟进 | 二十二 | 已提交 [#1470](https://github.com/pbakaus/impeccable/issues/1470)（Open，needs triage）；触发线=上游回复或要求拆分时处理 | 草稿存 [docs/upstream/impeccable-detector-issue-draft-2026-11-14.md](docs/upstream/impeccable-detector-issue-draft-2026-11-14.md) |
+| 🟡 挂起 | taste-skill 轨二（slop 审计/重设计）+ description 自动触发观察 | 二十三 | 触发线=用户想跑轨二，或下次真实建站会话顺带记录是否自动触发（显式触发名已实证 `taste-skill:design-taste-frontend`） | 夹具在 `D:\Code\taste-skill-test\slop-sample.html`；§23 补记3 |
 
 ---
 
@@ -938,3 +939,84 @@ critique 实测 → P0 修复（GUI 引导 3 轮：只修 2 条 P0 / 文案对�
 **补记2（issue 已提交）**：用户于 2026-11-14 提交
 [pbakaus/impeccable#1470](https://github.com/pbakaus/impeccable/issues/1470)（Open，覆盖三条 finding，
 自动打 `needs triage`，尚无维护者回复）。账本行改挂「上游回复」触发线。
+
+## 2026-11-14(第23段)taste-skill 2.5.1 落地 plugins/taste-skill/ — vendor+Stop 闸门桥全绿，待安装
+
+上游 [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill)（反平庸前端建站 skill，
+MIT，111k+ stars）按 upstream-skill-port 评估四问全过 → 走 B 路线 vendor。评估过程见当日会话；
+两条新经验（frontmatter `hooks:` 静默忽略要判「硬防线 vs 冗余层」、`--hook <host>`+MODES 表
+第二种钩子信封形态）已并进 `.zcode/skills/upstream-skill-port/SKILL.md`。
+
+**产出**（本段未提交，工作区 4 路径，提交待用户拍板）：
+
+- `plugins/taste-skill/skills/taste-skill/`（38M）+ `LICENSE` —— 上游 commit `f6b7657`（2.5.1，
+  2026-11-07）整目录 vendor，`diff -r` 逐字节一致，SKILL.md 未改动（frontmatter `hooks:` 块
+  ZCode 静默忽略；其 Stop-gate 属冗余层，正文第 4 步本就要求手动跑 gate）
+- `.zcode-plugin/plugin.json`（版本=上游 2.5.1）、`commands/taste-skill.md`（纯路由）、
+  `README.md`（含更新 runbook 与「description 自动触发弱化」警示）、根 `marketplace.json` 注册
+- `hooks/hooks.json`：Stop → `node ${ZCODE_PLUGIN_ROOT}/skills/taste-skill/scripts/gate.mjs
+  --hook claude`，`timeoutMs: 600000`（对齐上游 600s；引擎自预算 9.5 分钟）。无需 wrapper ——
+  引擎自带 never-trap 硬化（未布防/异常/他人会话/轮次用尽一律放行 exit 0）
+
+**实测证据（2026-11-14）**：① 未布防冒烟：空目录喂 Stop 信封 → 0.09s 静默放行 exit 0；
+② 布防冒烟：`gate.mjs --start` 后喂信封 → 真浏览器跑检查、18 FAILs → stdout 精确输出
+Claude 协议 `{"decision":"block","reason":…}` + exit 0（「首跑不算轮次」语义原样生效）；
+③ `node _audit-plugins.mjs`：**0 ERROR**；2 条 WARN 均已在插件 README 记录裁定
+（skill name `design-taste-frontend` ≠ 目录名 `taste-skill` 系上游原生组合，保机械 diff 不改；
+description 904/1024，触发句在第 567 字符 ⇒ 自动触发弱化，靠 `/taste-skill` 命令兜底）。
+
+**顺手修**：`_audit-plugins.mjs` 的 `fmv` 不识别 YAML 块标量（把 `>-` 首行当值，误报
+「description 2/1024」）——已改为块标量折叠后实测（该脚本被 .gitignore 忽略，属本地工具不入库）。
+
+**补记1（测试夹具就绪）**：`D:\Code\taste-skill-test\` 建好，两轨——`brief-software\BRIEF.md`
+（虚构开发者工具 TasteShift，硬事实齐全：42ms / $20 / 4,200 stars / v1.0 2026-03-18；
+明确禁编造评价、禁街道地址、MySQL/SQLite 只能 roadmap 口径）与 `slop-sample.html`
+（故意平庸的通用 AI 页，埋 7 类破绽，破绽↔规则对应表在其 README）。夹具自检：vendored
+`copy-lint.mjs --kind software` 实测 2 FAIL + 2 WARN，正是设计要踩的规则（slop 词 /
+stock 短语 / 无出处 proof-figure / 感叹号）。测试流程、验收口径与记录模板见该目录 README；
+测完按其第 3 节模板回填本段补记。
+
+**补记2（轨一 E2E 实测，2026-11-15）**：`brief-software\` 按 BRIEF.md 建站完成，最终
+`GATE: PASS`（gate-final.txt）。按 README 第 3 节模板回填：
+
+- 技能触发：`taste-skill:design-taste-frontend`（Skill 显式调用；description 自动触发未测，
+  弱化项维持 README 既有判断）
+- 轨一：GATE: PASS（build 4 验证轮，round 1 即 PASS）· 修正过程 29→20→12→6→5→1→PASS，
+  共 4 个 build（build 1/2 轮次用尽收 OPEN 后全量实修再开新 build，无 waiver、无改 kit）·
+  截图 shots/ 落盘（1440/1024/820x1180/768x1024/390 + layout/ + tiles/ + share.jpg）·
+  layout check 五尺寸 no findings · copy-lint 0 FAIL 1 WARN（hero-facts 数字条，全部
+  brief 事实，保留）· brief 外事实抽查=干净（无评价/客户/地址/电话；MySQL/SQLite 仅
+  roadmap 口径；无 enterprise；无照片，视觉全为产品 UI+图标）
+- 轨二：未跑（本次会话只做了轨一）
+- Stop 钩子：未在 build 中途收尾过（全部手动 gate）；build 已 done，后续收尾静默放行
+- 异常/绕行：① perf.mjs 报 `/%23n` 破请求 2 行——探针实测自然加载（含滚动+390 重载）
+  109 请求 0 失败，判定为 perf audit 的合成 Image 请求伪象，页面本身无此请求；
+  ② 沙箱网络屏蔽 logos CDN（postgres/npm 图标取不到）→ 改用本地 lucide `ui:database`
+  字形与 json 文件图标，未画仿 logo；③ kit 判定细节备忘：copy-headings 的词表不含
+  "client/writes" 类泛词（标题须含品类/品牌/section 名词）；text-only 只认 ≥24px 视觉
+  元素；`data-edge-free` 只有 layout-check 认，consistency 的 container-edges 不认；
+  --p-h 等自定义属性被后写的同名基础规则覆盖（媒体查询不加特异性）
+
+**补记3（独立复核，2026-11-15）**：按盘上产物逐项复核 GUI 报告，全部对上——
+
+- **闸门终态**：`gate.json` status=pass / waivers=0；`gate-final.txt` = `GATE: PASS`
+  （23 WARN 非阻塞）；`gate-run1.txt` 存档首轮 29 FAIL。中间轮次计数（20/12/6/5/1）随
+  多次 build 的 gate.json 重置不在盘上，以 GUI 报告为见证，端点证据齐全。
+- **Stop 桥生产实证（比补记2 更强）**：`gate.json` history 实录 `11-14T18:21 hook
+  host=claude decision=allow` —— PASS 后的自然收尾确实**经过插件桥**放行，非"理论放行"；
+  且无 `gate-blocks.json` = 钩子全程零阻塞。至此 hooks.json 桥的三态（本地冒烟 block /
+  未布防快速放行 / 生产自然收尾 allow）全部有实测。
+- **brief 事实抽查**：`$20`×4、`v1.0 shipped 18 March 2026`、42ms、4,200 stars、
+  PostgreSQL 14+ 硬承认、Get started→/docs/quickstart、hello@tasteshift.dev 均在；
+  编造评价/街道号/logo 墙/电话/MySQL-as-supported 均无；canonical 域名按约定注释待供。
+  （核验过程注：初查两处「缺」系本侧正则转义误报——`/\$20/` 在 bash 双引号里 `$` 变
+  锚点；日期写法为自然英文非 ISO。）
+- **kit 零改动**：`diff -rq` 项目 assets vs vendored 仅有新增产物行（icons-credits.json
+  与 5 个本地图标 SVG），无任何 `Files differ` 行。
+- **安装态**：`installed_plugins.json` 有 `taste-skill@zcode-plugin 2.5.1`；安装缓存
+  `diff -rq` 与仓库源逐字节一致。
+- **视觉**：shots/1440.png（桌面分栏 hero+产品 UI 面板+暗带节奏+定价双卡）与 390.png
+  （单列堆叠无溢出）人工过目，无模板感、无违禁形态。
+- **调试 skill 复审**（铁律3）：`taste-skill-gate-debug/SKILL.md` 判据与 gate.mjs
+  2.5.1 实际行为一致（copy-headings 词表 / text-only 24px / data-edge-free 归属 /
+  --p-h 覆盖顺序），未发现需修正项。
