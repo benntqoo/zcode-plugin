@@ -843,8 +843,11 @@ A19/A19b config 自动发现），37 → **42** 全绿 —— 共享 fixture 不
 **账本动作**：⏳「开场注入验证」行完成投影（本会话 cwd 命中，`[entrypoints]` 块与表一致）
 → `docs/archive/handoff-ledger-2026-11.md` 开档；+1 行（impeccable 安装 + 预热，用户侧）。
 
-**未提交**：本会话工作区是 detached HEAD worktree（`ea1e`），全部改动停留工作区 ——
-落地需在 worktree 提交分支后并入 `main`（或由用户决定处置），**不要直接在 detached HEAD 上提交**。
+**已落地（2026-11-14 用户拍板「测试→合并→推送」）**：worktree 建分支 `feat/impeccable-zcode`
+提交（启动器 exec 位修正为 100755 后 amend），`--ff-only` 并入 `main`，推送 origin
+`09142a3..6934cde`（**顺带结清上一会话的推送欠账 `39afca6`**）。结构校验 12/12、
+回归（detect / hook wrapper / 体量闸）全绿后方才合并；plugin-creator validator 对上游
+bundle 的 TODO 注释有一条已知误报（插件 README 已记，勿当缺陷修）。
 
 **方法论沉淀**：`.zcode/skills/upstream-skill-port/SKILL.md`（跨工具 skill → ZCode 插件的适配法）。
 
