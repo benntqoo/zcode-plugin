@@ -48,7 +48,7 @@
 
 | 状态 | 事项 | 来源段 | 下一步 / 触发线 / 验证日期 | 备注 |
 |---|---|---|---|---|
-| 🔴 待办 | impeccable 插件安装 + 引擎预热 | 二十 | GUI 安装 + 开新会话；装后首跑任一动词预热引擎下载（落 ~/.impeccable） | 上游能力 vendor 适配，见「二十」 |
+| 🟡 挂起 | impeccable 上游口径反馈 issue（3 条线索已本地核实） | 二十二 | 触发线=用户拍板是否发 pbakaus/impeccable | 可代拟全文：overused-font 双口径 / low-contrast 端点归因 / nested-cards 判据文档化 |
 | 🔴 待办 | skill-forge 更新 1.1.3 | 二十一 | GUI 更新 + 开新会话 | hooks 冗余声明清理（行为不变）；升版以触发更新提示 |
 | 🔴 待办 | memory-loop 重装 1.0.1 | 十八 | GUI 更新 + 开新会话 | 21 节顺带清理 hooks 冗余声明 |
 | 🔴 待办 | project-guardrails 重装 1.1.2 | 十八补记 | GUI 更新 + 开新会话 | 21 节顺带清理 hooks 冗余声明，可与 1.0.1 顺手一起 |
@@ -900,3 +900,34 @@ SKILL.md 必填与 1024 上限、marketplace 条目对齐。
 兜底——从公开文档移除），**CONTRIBUTING.md** 新建（原「新增插件/技能」与「开发硬规矩」
 ~160 行整体迁入，仅增补：版本号三处联动的教训、hooks 标准位置自动加载、仓库结构树、
 命名正则与 description 1024 上限），**README.en.md** 新建英文镜像。规范依据同本节正文。
+
+---
+
+## 2026-11-14(第22段)impeccable E2E 验收通过（用户侧 GUI 实测）— 五步全绿，全链路闭环
+
+**测试过程**（用户 GUI 会话，夹具目录 `D:\Code\impeccable-test\`）：安装 → `npx impeccable detect` 预热 →
+critique 实测 → P0 修复（GUI 引导 3 轮：只修 2 条 P0 / 文案对齐修复后事实 / 修后检测复核）→ 验收。
+首次 critique 曾判未通过（输出为裸点评，根因=未装/未开新会话 —— 真实故障模式，复测即通过）。
+
+**验收证据（GUI 产出 + 本地引擎独立复核一致）**：
+
+- 技能触发：`impeccable:impeccable critique slop-sample.html`（插件:技能命名空间可见）
+- critique 全流水线：slug/ignore 解析、A/B 双隔离子代理（互不可见）、浏览器 live 注入 overlay、
+  live-server sha256 前后校验与清理；10 项启发式评分表 10/16（Acceptable）+ 报告落盘
+  （`.impeccable/critique/2026-11-14T14-25-06Z__slop-sample-html.md`）
+- **设计钩子（PostToolUse）**：`.impeccable/hook.cache.json` 记录该会话对夹具 **editCount=4**
+  （含 findings 状态管理与 cleanAcked）—— 编辑循环全程运行
+- detect before/after：修前 **4** 命中（2×low-contrast / overused-font / ai-color-palette）→
+  修后 **2** 命中（恰为约定保留的 2 条）；负对照 clean-sample.html **0** 命中
+
+**上游反馈线索 3 条（本地引擎已核实，🟡 入账本待拍板是否发 upstream）**：
+① overused-font 声明/渲染双口径需文档说明（声明口径是规则本意，非 bug）；
+② low-contrast 渐变归因取最差端点、数值随文本长度（→采样位置）漂移（实测活证据：同一文件
+两次检测 2.1→1.5:1）；③ nested-cards 判据需文档化（规则存在，半透明弱形态不触发）。
+
+**夹具定稿**：`slop-sample.html`（正样本，已恢复 + 诚实注释）、`page.html`（修复后副本）、
+`clean-sample.html`（负对照，纯白底 —— 初版 `#faf7f2` 米白会命中 warm-bg 规则，负对照本身也要防 slop）。
+
+**GUI agent 的两处裁定记录**：「card-in-card 检测器根本没有这条判据」系过度归因（实测规则存在，
+真因是夹具弱形态）；修卡面超出了「只改 muted 颜色」的字面范围但数学上必要（玻璃卡合成底任何
+文字色上限 ≈3.9:1 < AA 4.5:1）且已披露副作用 —— 两者均接受。
