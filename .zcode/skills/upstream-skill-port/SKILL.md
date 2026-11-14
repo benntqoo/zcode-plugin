@@ -9,17 +9,23 @@ metadata:
 
 # upstream-skill-port — 跨工具 skill 适配成 ZCode 插件
 
-实例：pbakaus/impeccable 4.9.1 → `plugins/impeccable/`（本仓库第 20 段）。
+实例：pbakaus/impeccable 4.9.1 → `plugins/impeccable/`（本仓库第 20 段）；
+Leonxlnx/taste-skill 2.5.1 → `plugins/taste-skill/`（第 23 段，Stop 闸门直桥实证）。
 
 ## 一、评估四问（决定「天然兼容度」）
 
 1. **产物格式**：上游有没有「通用/多工具产物」（如 `.agents/skills/` 变体）？其 SKILL.md frontmatter
    字段集与 ZCode 允许集（name/description/when_to_use/metadata）**求交集** —— 未知字段被静默忽略不算错，
    逐字段核对即可。上游仓库通常有 `scripts/lib/transformers/providers.js` 这类 provider 注册表，
-   一眼看清所有变体。
+   一眼看清所有变体。⚠️ frontmatter 里的 `hooks:`（Claude 风格 Stop/PostToolUse 块）ZCode 也会静默忽略
+   ——要判断被忽略的钩子是**硬防线还是冗余层**：taste-skill 的 Stop-gate 是冗余（正文第 4 步本来就要求
+   手动跑 gate.mjs，丢了无碍）；若钩子是唯一防线，就得用插件级 hooks.json 桥回来（见三.4）。
 2. **钩子信封**：上游 hook 引擎对 Claude 风格 snake_case 信封（`hook_event_name`/`tool_name`/`tool_input`）
    的 **fallback 是什么**？impeccable 的 `resolve_harness` fallback=claude ⇒ ZCode 信封免改直喂，
-   不需要设 harness 环境变量。
+   不需要设 harness 环境变量。另一种形态：hook 引擎收 `--hook <host>` 标志、内部 MODES 表
+   `{claude:'block',...}`，stdin 宽松解析（超时短、`stop_hook_active` 可选）、stdout 输出 Claude 协议
+   `{decision:'block',reason}` 且恒 exit 0 —— taste-skill 的 `gate.mjs --hook claude` 即此形态，
+   ZCode 插件级 hooks.json Stop 事件直喂 `--hook claude` 免改。
 3. **CLI 独立性**：引擎/CLI 是否零集成可用（`npx <pkg> detect` 这类）？可用则检测器能力即刻到手。
 4. **自定位**：skill 是否自解析自身目录（而非依赖宿主注入路径）？impeccable 用
    `<skill-dir>/scripts/impeccable context` 上报 base dir ⇒ 放哪都能跑。
@@ -45,6 +51,9 @@ ZCode 用户级 priority 高于项目级/插件，静默遮蔽，症状「文件
    由 skill 的自定位机制解析路径），不要在命令里猜安装缓存路径。
 4. 钩子桥：hook 命令里可用 `${ZCODE_PLUGIN_ROOT}`（本仓库三个插件实测约定）；宿主差异包在
    node wrapper 里（见下节），hooks.json 保持 `command: node` 最小面。
+   **wrapper 不是必需**：引擎是纯 node + 自带 never-trap 硬化（未布防快速退出、异常放行、
+   恒 exit 0）时，hooks.json 直指脚本即可 —— taste-skill 的 Stop 闸门直桥实测：未布防 0.09s
+   静默、布防后 block JSON 全链路生效。只有引擎要外部启动器（impeccable 的 sh/cmd 启动链）才配 wrapper。
 
 ## 四、Windows + Git Bash wrapper 三坑（全部实测复现）
 
@@ -67,7 +76,10 @@ node wrapper spawn 启动器时：
   不触发 rustup 下载；`RUSTUP_TOOLCHAIN=` 可绕 rust-toolchain.toml）。
 - **node 读 `/tmp` 不走 MSYS 翻译**（会解析成 `<盘>:\tmp`）：跨 bash/node 传路径用 `$TMP`/`process.env.TEMP`。
 - **description 250 字符截断**：ZCode 只注入前 250 字符，上游长 description 要确认触发词在前段
-  （impeccable 恰好前 150 字符内含全部触发动词，可用）。
+  （impeccable 恰好前 150 字符内含全部触发动词，可用）。反例 taste-skill 2.5.1：description 904 字符，
+  触发句「Use this whenever you build, design, redesign…」在第 567 字符 ⇒ 自动触发弱化。
+  vendor 铁律「SKILL.md 不改动」与此冲突时的取含：保持不改、接受弱化，靠显式调用（`$taste-skill` /
+  用户说「用 taste-skill 建站」）兜底 —— 比为触发率改动正文破坏机械 diff 更划算。
 
 ## 六、更新 runbook（模板）
 
