@@ -1,6 +1,6 @@
 {
   "name": "skill-forge",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "description": "Auto-distill reusable skills after multi-step tasks, and keep the skill library fresh and within budget.",
   "author": {
     "name": "Jrtou"
@@ -12,6 +12,5 @@
     "workflow",
     "self-improvement"
   ],
-  "commands": "commands",
-  "hooks": "./hooks/hooks.json"
+  "commands": "commands"
 }

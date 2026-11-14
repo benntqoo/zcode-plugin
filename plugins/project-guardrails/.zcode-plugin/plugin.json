@@ -13,6 +13,5 @@
     "safety",
     "project-config"
   ],
-  "commands": "commands",
-  "hooks": "./hooks/hooks.json"
+  "commands": "commands"
 }

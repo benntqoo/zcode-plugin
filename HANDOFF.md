@@ -3,7 +3,8 @@
 > 更新：2026-11-14
 > 状态：仓库定位已扩为「**插件 + 技能开发库**」—— `plugins/` 4 个插件、`skills/` 1 个技能。
 > **三个插件均已安装生效**：`skill-forge` 1.1.2、`memory-loop` 1.0.0、`project-guardrails` 1.1.1
-> （仓库源分别是 1.1.2 / **1.0.1** / **1.1.2** —— 后两者待重装，见账本）。
+> （仓库源分别是 **1.1.3** / **1.0.1** / **1.1.2** —— 三者均待重装/更新：后两者本有功能滞差，
+> skill-forge 因 21 节 hooks 声明清理升 1.1.3，见账本）。
 > 新增 `impeccable`（上游 pbakaus/impeccable 的 vendor 适配，仓库源 4.9.1）**待安装**，见「二十」。
 > 新会话直接从这里接。
 >
@@ -48,8 +49,9 @@
 | 状态 | 事项 | 来源段 | 下一步 / 触发线 / 验证日期 | 备注 |
 |---|---|---|---|---|
 | 🔴 待办 | impeccable 插件安装 + 引擎预热 | 二十 | GUI 安装 + 开新会话；装后首跑任一动词预热引擎下载（落 ~/.impeccable） | 上游能力 vendor 适配，见「二十」 |
-| 🔴 待办 | memory-loop 重装 1.0.1 | 十八 | GUI 更新 + 开新会话 | 仅 README 措辞，无功能变化 |
-| 🔴 待办 | project-guardrails 重装 1.1.2 | 十八补记 | GUI 更新 + 开新会话 | 仅测试文件差异，可与 1.0.1 顺手一起 |
+| 🔴 待办 | skill-forge 更新 1.1.3 | 二十一 | GUI 更新 + 开新会话 | hooks 冗余声明清理（行为不变）；升版以触发更新提示 |
+| 🔴 待办 | memory-loop 重装 1.0.1 | 十八 | GUI 更新 + 开新会话 | 21 节顺带清理 hooks 冗余声明 |
+| 🔴 待办 | project-guardrails 重装 1.1.2 | 十八补记 | GUI 更新 + 开新会话 | 21 节顺带清理 hooks 冗余声明，可与 1.0.1 顺手一起 |
 
 ---
 
@@ -858,3 +860,36 @@ bundle 的 TODO 注释有一条已知误报（插件 README 已记，勿当缺�
 ③ wrapper → sh → 引擎 `hook` 动词：对真实 slop 内容检出 low-contrast，并以 Claude 风格
 `hookSpecificOutput.additionalContext` 信封返回（ZCode 原生消费），exit 0。
 **引擎 E2E 通过，仅引擎下载通道在本会话沙箱不可用**（生产环境不受影响）。
+
+---
+
+## 2026-11-14(第21段)官方规范对标审计（4 插件 + marketplace）— 0 ERROR；清理 hooks 冗余声明
+
+**规范来源**：`zcode.z.ai/cn/docs/plugin`（主 schema 全在主页；另核 /docs/hooks、/docs/skill 子页）。
+审计脚本 `_audit-plugins.mjs`（gitignored 一次性件，规范漂移时可照本段重建）：manifest 字段白名单 /
+命名正则 / 版本同步、hooks 事件表 / matcher 语义 / 超时单位、命令名正则 / frontmatter 白名单、
+SKILL.md 必填与 1024 上限、marketplace 条目对齐。
+
+**结果与处置**（初判 0 ERROR / 8 WARN）：
+
+- **[修] hooks 冗余声明 ×4**：规范明确 `hooks/hooks.json` 标准位置**自动加载**，manifest 重复指向
+  同一文件会记「重复诊断并跳过」。四个插件全声明了 → 全部删除（行为不变：自动加载仍生效）。
+  **skill-forge 连锁升 1.1.3** —— 更新检测口径 = marketplace 条目 version vs 已装 manifest version，
+  不升版则无更新提示、清理到不了安装态（另两个插件本有滞差提示，无需升）；README 版本表联动。
+- **[留证] SessionStart matcher 含 `resume`**（memory-loop / project-guardrails）：规范定义的
+  source 仅 `startup/clear/compact`，`resume` 永不触发、无实害；保留作防御（日后支持即正确命中）。
+- **[留证] marketplace 顶层 `owner` 字段**：规范顶层字段表未列出（疑似沿用 Claude 格式）；
+  加载器容忍，保留。
+
+**规范事实备查（复用价值高，防止重查）**：
+
+- skill description **>1024 字符 = 整条丢弃**（非截断）；注入摘要每条截 250 字符，总预算超限降级为只留名字。
+- 插件内技能只认 `skills/<名>/SKILL.md` **单层目录**，嵌套分组不识别。
+- matcher：缺省 / `*` / 空 = 全匹配；`^[\w|]+$` = 精确列表；含其他字符 = JS 正则（非法不执行并诊断）。
+- `type: process` 用 `timeoutMs`(毫秒)、`type: command` 用 `timeout`(秒)，并存时 timeoutMs 优先。
+- stdout 仅去空白后以 `{` 开头的合法 JSON 按协议解析；注入上下文推荐
+  `hookSpecificOutput.additionalContext`；PreToolUse 聚合 `deny > ask > allow`；Stop block 连续 ≤3 次。
+- 项目级 hooks（workspace config）当前被整体忽略（`config_project_hooks_ignored`）；
+  插件 env 注入 `ZCODE_PLUGIN_ROOT/DATA/ID/NAME`（`CLAUDE_*` 兼容）。
+
+**审计后**：0 ERROR / 4 WARN（全部为上述保留决策项）。

@@ -33,7 +33,7 @@
 
 | 插件 | 版本 | 作用 | 文档 |
 |---|---|---|---|
-| `skill-forge` | 1.1.2 | 多步任务后自动沉淀可复用 skill，并在使用中顺手修正已有 skill（2 个命令 + Stop/SessionStart 钩子） | [plugins/skill-forge/README.md](plugins/skill-forge/README.md) |
+| `skill-forge` | 1.1.3 | 多步任务后自动沉淀可复用 skill，并在使用中顺手修正已有 skill（2 个命令 + Stop/SessionStart 钩子） | [plugins/skill-forge/README.md](plugins/skill-forge/README.md) |
 | `memory-loop` | 1.0.1 | 消费上游 `stop-memory.js` 产出的记忆候选：Stop 按 cwd 分流到各项目并去重，SessionStart 把蒸馏后的 `MEMORY.md` 注入上下文。1 个命令 + 2 个钩子 | [plugins/memory-loop/README.md](plugins/memory-loop/README.md) |
 | `project-guardrails` | 1.1.2 | 项目级约定与工具规则 + **会话开场索引**。`entrypoints[]`（待办账本索引 + 体量状态）**零配置**：仓库里只要有账本载体就自动注入，无需写配置文件；`context[]` / `rules[]` 按需在 `<repo>/.agents/guardrails.json`（回退 `.zcode/`）声明。1 个命令 + 3 个钩子 | [plugins/project-guardrails/README.md](plugins/project-guardrails/README.md) |
 | `impeccable` | 4.9.1 | 上游 [pbakaus/impeccable](https://github.com/pbakaus/impeccable) 的 **vendor 适配**（版本号 = 上游版本号）：1 个设计 skill + `/impeccable` 命令路由 + PostToolUse 设计钩子（v1 只接 PostToolUse，SessionStart/Stop 可按插件 README 追加）。引擎二进制首跑下载、不经本仓库分发 | [plugins/impeccable/README.md](plugins/impeccable/README.md) |

@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "skill-forge",
-      "version": "1.1.2",
+      "version": "1.1.3",
       "description": "Auto-distill reusable skills after multi-step tasks, and keep the skill library fresh and within budget.",
       "source": "./plugins/skill-forge",
       "category": "productivity"
