@@ -1,355 +1,127 @@
 # zcode-plugin
 
-个人 **ZCode 插件与技能的开发库**（marketplace id: `zcode-plugin`）。
+**ZCode 的开源插件市场与技能库** —— 补上 ZCode 缺失的三条机制（记忆闭环、项目护栏、经验沉淀），并引入上游设计能力。
 
-两类单元，各自独立、互不依赖：
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![Platform](https://img.shields.io/badge/platform-ZCode-blue)
+![Marketplace](https://img.shields.io/badge/marketplace-local%20directory-8A2BE2)
+![Node](https://img.shields.io/badge/hooks-node%20process-green)
 
-| | `plugins/` | `skills/` |
-|---|---|---|
-| 是什么 | 可安装的插件（可含 skills / commands / hooks / mcpServers） | 独立的技能（`SKILL.md` + 可选 `references/`） |
-| 怎么分发 | 走市场 —— 仓库根本身就是市场源，ZCode「Add marketplace → 本地目录」指向它 | **无独立分发通道**，手动复制 / 软链到 `~/.agents/skills/`（见 [`skills/README.md`](skills/README.md)） |
-| 怎么生效 | 安装插件 + **开新会话** | 落到技能根 + **开新会话或 `/clear`** |
+[English](README.en.md) | 简体中文
 
-- 当前收录：**4** 个插件、**1** 个技能
-  - 插件：[`skill-forge`](plugins/skill-forge/README.md) —— 多步任务后沉淀可复用 skill
-  - 插件：[`memory-loop`](plugins/memory-loop/README.md) —— 闭合记忆回路：候选分流 → 蒸馏 → 会话注入
-  - 插件：[`project-guardrails`](plugins/project-guardrails/README.md) —— 项目级约定与工具规则（用户级钩子代为执行）+ 会话开场注入待办账本索引
-  - 插件：[`impeccable`](plugins/impeccable/README.md) —— 上游 [pbakaus/impeccable](https://github.com/pbakaus/impeccable) 的 ZCode 适配版：设计词汇表 skill（24 动词）+ `/impeccable` 命令 + PostToolUse 设计钩子
-  - 技能：[`doc-protocol`](skills/doc-protocol/SKILL.md) —— 文档职责路由与进度真值协议（自包含：通用原则 + 落地层，内含 stock-agent 实例）
-- 远端：`git@github.com:benntqoo/zcode-plugin.git`（`main`）
+仓库根本身就是一个 **ZCode 本地插件市场**：把本目录添加为市场源，即可安装下列全部插件。
+
+---
+
+## 提供的工具
+
+### 插件（走市场安装）
+
+| 插件 | 版本 | 类型 | 一句话 |
+|---|---|---|---|
+| [`skill-forge`](plugins/skill-forge/README.md) | 1.1.3 | 机制 · 经验沉淀 | 多步任务后自动把可复用做法沉淀成 skill，并在使用中顺手修正已有 skill |
+| [`memory-loop`](plugins/memory-loop/README.md) | 1.0.1 | 机制 · 记忆闭环 | 消费记忆候选 → 按 cwd 分流 → 蒸馏 → 会话开始自动注入 |
+| [`project-guardrails`](plugins/project-guardrails/README.md) | 1.1.2 | 机制 · 项目护栏 | 项目级约定与工具规则 + 会话开场自动注入待办账本索引（零配置） |
+| [`impeccable`](plugins/impeccable/README.md) | 4.9.1 | 能力 · 设计 | 上游 [pbakaus/impeccable](https://github.com/pbakaus/impeccable) 的 ZCode 适配版：设计词汇表 + AI-slop 检测器 |
+
+#### skill-forge —— 经验自动沉淀
+
+任务收尾时，agent 若走了 5 步以上、踩过非显然的坑、或定下了会重复用到的约定，会自动把经验写成项目级 skill（落在 `<repo>/.zcode/skills/`，随 git 走、可 review）。
+
+- **命令**：`/skill-forge`（手动触发沉淀）· `/skill-audit`（盘点 skill 库预算与同名遮蔽）
+- **钩子**：`Stop`（沉淀提醒）+ `SessionStart`（compact/clear 后重注入规则）
+- **用法**：装完即生效，无需配置
+
+#### memory-loop —— 记忆闭环
+
+ZCode 的记忆候选只写不读（`memory-candidates.jsonl` 只增不减）。本插件是它的**消费者**：Stop 时按 `cwd` 把候选分流到各项目并去重，人工蒸馏后于 SessionStart 注入。
+
+- **命令**：`/memory-loop`（蒸馏辅助）
+- **钩子**：`Stop`（分流）+ `SessionStart`（注入蒸馏后的 `MEMORY.md`）
+- **前提**：需要上游某个钩子在写候选（默认对接 `~/.zcode/hooks/memory-candidates.jsonl`）；没有上游时不报错、什么也不做
+
+#### project-guardrails —— 项目护栏
+
+工作区级 hooks 默认「待信任」，项目自带约束门槛高。本插件以**用户级**插件代读项目声明，绕开信任闸：
+
+- **零配置**：仓库里只要有待办账本载体，SessionStart 自动注入账本索引 + 体量状态
+- **按需配置**：`<repo>/.agents/guardrails.json`（回退 `.zcode/`）声明 `context[]`（开场注入的约定）、`rules[]`（PreToolUse 工具规则，支持 `deny`/`ask`）、`entrypoints[]`（自定义注入项）
+
+```jsonc
+// <repo>/.agents/guardrails.json 示例
+{
+  "context": ["本仓库用 pnpm，禁止 npm install"],
+  "rules": [{ "tool": "Bash", "pattern": "git push --force", "decision": "deny", "reason": "禁强推" }]
+}
+```
+
+- **命令**：`/guardrails`（查看当前生效声明）
+- **钩子**：`SessionStart` ×2（规则注入 + 账本索引，独立失败域）+ `PreToolUse`（工具规则）
+
+#### impeccable —— 设计能力（vendor 适配）
+
+上游 24 个设计动词（`polish` / `critique` / `audit` / `bolder`…）+ 62 条确定性 AI-slop 检测器（Rust 引擎，无需 LLM）+ 自动设计钩子。上游文件零改动，适配层为 wrapper / 命令路由 / 钩子桥。
+
+- **命令**：`/impeccable <verb> [target]`
+- **钩子**：`PostToolUse`（Edit/Write 后自动扫描被改 UI 文件）
+- **用法**：
+
+```bash
+# 会话内：说「把这个页面 polish 一下」或
+/impeccable polish src/app.html
+
+# 纯检测（CI 可用，--json / --github 出结构化结果）
+npx impeccable detect src/
+```
+
+> 引擎二进制首跑自动下载（校验 checksum）；上游出新版按插件 README 的 re-vendor runbook 跟进。
+
+### 技能（手动安装）
+
+| 技能 | 作用 |
+|---|---|
+| [`doc-protocol`](skills/doc-protocol/SKILL.md) | 文档职责路由与进度真值协议：每类事实只有一个权威载体、唯一待办账本、热/温/冷分层与体量预算、会话开场/收尾清单。自包含（通用原则 + 落地层 + stock-agent 实例 + 体量闸脚本） |
+
+```bash
+cp -r skills/doc-protocol ~/.agents/skills/doc-protocol   # 或 ln -s 软链
+```
 
 ## 安装
 
-1. ZCode → **Settings → Plugins** → 右上 **Create → Add marketplace** → 选本地目录：
+1. ZCode → **Settings → Plugins** → **Create → Add marketplace** → 选本仓库目录（克隆到本地即可）
+2. 市场里对目标插件点 **Install**（默认启用）
+3. **开新会话** —— hook 配置在会话启动时快照，运行中的会话不热加载
 
-   ```
-   D:\Code\zcode-plugin
-   ```
+要求：ZCode 桌面版；钩子进程依赖 **Node**；`impeccable` 的设计钩子在 Windows 走 Git Bash 的 `sh`（ZCode 默认 shell 即是）。
 
-2. 在市场里对目标插件点 **Install**（新建插件默认启用）
-3. **开新会话** —— hook 配置在会话启动时快照，运行中的会话不会热加载
+## 为什么是这些插件
 
-## 已收录插件
+ZCode 的系统提示管线不弱，弱的是**可编程性与可移植性**。本仓库全部插件都在补机制缺口：
 
-| 插件 | 版本 | 作用 | 文档 |
-|---|---|---|---|
-| `skill-forge` | 1.1.3 | 多步任务后自动沉淀可复用 skill，并在使用中顺手修正已有 skill（2 个命令 + Stop/SessionStart 钩子） | [plugins/skill-forge/README.md](plugins/skill-forge/README.md) |
-| `memory-loop` | 1.0.1 | 消费上游 `stop-memory.js` 产出的记忆候选：Stop 按 cwd 分流到各项目并去重，SessionStart 把蒸馏后的 `MEMORY.md` 注入上下文。1 个命令 + 2 个钩子 | [plugins/memory-loop/README.md](plugins/memory-loop/README.md) |
-| `project-guardrails` | 1.1.2 | 项目级约定与工具规则 + **会话开场索引**。`entrypoints[]`（待办账本索引 + 体量状态）**零配置**：仓库里只要有账本载体就自动注入，无需写配置文件；`context[]` / `rules[]` 按需在 `<repo>/.agents/guardrails.json`（回退 `.zcode/`）声明。1 个命令 + 3 个钩子 | [plugins/project-guardrails/README.md](plugins/project-guardrails/README.md) |
-| `impeccable` | 4.9.1 | 上游 [pbakaus/impeccable](https://github.com/pbakaus/impeccable) 的 **vendor 适配**（版本号 = 上游版本号）：1 个设计 skill + `/impeccable` 命令路由 + PostToolUse 设计钩子（v1 只接 PostToolUse，SessionStart/Stop 可按插件 README 追加）。引擎二进制首跑下载、不经本仓库分发 | [plugins/impeccable/README.md](plugins/impeccable/README.md) |
-
-`memory-loop` 是「下游」性质的插件 —— 它假设上游已有某个钩子在写记忆候选（默认对接
-`~/.zcode/hooks/memory-candidates.jsonl`）。没有上游时它不会报错，只是什么也不做。
-
-`project-guardrails` 是**补充**而非替代：用户级的 `~/.zcode/hooks/guard-bash.js` 依旧是全局兜底黑名单，
-本插件只叠加**项目级增量规则**。两者在 `PreToolUse` 上共存 —— 多方决策按 `deny > ask > 其它` 归并。
-
-`impeccable` 与其余三者性质不同：前三个补的是 ZCode 的「机制」，它引入的是**能力**
-（上游设计方法论 + 确定性检测器），以 vendor 适配层（wrapper / hooks / 命令路由）接入。
-更新走插件 README 里的 re-vendor runbook。
-
-两份机制插件的完整设计笔记见根目录 [`HANDOFF.md`](HANDOFF.md)。
-
-## 已收录技能
-
-| 技能 | 作用 | 文档 |
+| ZCode 原生 | 后果 | 补足插件 |
 |---|---|---|
-| `doc-protocol` | 文档职责路由与进度真值协议：每类事实只有一个权威载体、计数与状态禁抄进 prose、唯一待办账本、指令文件准入测试、会话开场/收尾清单；**热/温/冷分层 + 每个热层载体的体量预算**（账本 ≤15KB/40 行、指令文件 ≤60KB/150 条、归档双判据 2000 行/500KB）。**一份自包含技能** —— 1~8 节通用原则（不预设文件名）+ 9 节落地层，内含 stock-agent 实例（载体映射 / 特有裁定 / 实证全文）与体量闸脚本 | [skills/doc-protocol/SKILL.md](skills/doc-protocol/SKILL.md) · [assets/check-doc-budget.py](skills/doc-protocol/assets/check-doc-budget.py) |
+| 记忆候选只写不读 | 全盘无消费者 | `memory-loop` |
+| 项目自带约束门槛高（工作区 hooks 待信任） | 约束进不了工具调用层 | `project-guardrails` |
+| 经验不沉淀、skill 库无观测 | 坑重踩、预算超限触发率骤降 | `skill-forge` |
 
-**安装方式与插件不同** —— 技能没有独立分发通道，需手动落到用户级技能根：
+完整分析（含 7 个 hook 事件的字段级契约、`runnable` / `diagnosticOnly` / `unsupported` 三档兼容性清单）见 [`docs/analysis/zcode-capability-gaps.md`](docs/analysis/zcode-capability-gaps.md)。
 
-```bash
-cp -r skills/doc-protocol ~/.agents/skills/doc-protocol      # 或 ln -s 做软链
-```
+## 文档导航
 
-`~/.agents/skills/` 是跨 agent 共享位（推荐）；`~/.zcode/skills/` 亦可。装完开新会话或 `/clear`。
-目录约定与全部细节见 [`skills/README.md`](skills/README.md)。
-
-> ⚠️ **用户级技能优先于项目级。** 同名时 `~/.agents/skills/` 那份会**遮蔽**项目内的同名技能
-> （源码：各根带 `priority`，用户级 20/30 < 项目级 40/50+，按 priority 升序取**首个**匹配）。
-> 所以给某个仓库做项目级落地时不要用同名技能 —— 用普通文件或换目录名，见 `doc-protocol` 9.1。
-
-## 这些插件增强的是 ZCode 的「机制」，不是「提示词」
-
-**结论先行**：ZCode 的系统提示管线本身不弱 —— 它有 12 个 section 组装器（身份、环境、Git、
-记忆、技能、会话指引都在里面）。弱的是**可编程性与可移植性**：没有让外部往上下文塞内容的入口，
-也没有让项目自带约束的通道。本仓库的插件全部在补这三条机制。
-
-| ZCode 原生 | 后果 | 补足插件 | 补足手段 | 生效入口 |
-|---|---|---|---|---|
-| 记忆候选只写不读 | `memory-candidates.jsonl` 只增不减，全盘无消费者；原生记忆 `features.memory.enabled` 默认 `false` | `memory-loop` | 按 `cwd` 分流到各项目 → 手动蒸馏 → 会话开始注入 | `SessionStart` → `additionalContext` |
-| 工作区级 hooks **默认「待信任」** | 项目自带约束门槛高：需逐仓库显式信任，声明摘要一变即 `stale_digest` 失效；`AGENTS.md` 只能写静态文字，管不住工具调用，也**不会**在开场把待办账本推进上下文 | `project-guardrails` | 由**用户级**插件代读项目声明；`entrypoints`（账本索引 + 体量）**零配置**，`context` / `rules` 才需在 `.agents/guardrails.json`（回退 `.zcode/`）里写 | `SessionStart` 注入约定 + 账本索引 + `PreToolUse` 返回 `deny`/`ask` |
-| 经验不沉淀、skill 库无观测 | 踩过的坑下次重踩；description 撞预算后自动触发率骤降 | `skill-forge` | 任务收尾把经验写进 `<repo>/.zcode/skills/`，`/skill-audit` 盘点预算 | `Stop` + `SessionStart` + 2 个命令 |
-
-### 由此推出的使用须知（使用者视角）
-
-1. **唯一能往上下文塞自定义文本的窗口是 `SessionStart`**（以及静态的 `AGENTS.md`）。
-   `UserPromptSubmit` 每轮都跑，拿它注入同一份内容只是重复烧上下文预算。
-2. **唯一能拦住工具调用的窗口是 `PreToolUse` / `PermissionRequest`**，其余 5 个事件只能注入文本。
-3. **每次改配置或重装插件，都要开新会话** —— hook 配置在会话启动时快照，运行中的会话不会热加载。
-4. 本仓库插件的数据都落在**项目内**（`<repo>/.zcode/`），可 review、可进 git。
-   唯一例外是各插件的**机械游标**（放插件数据目录，重装会被清空 —— 这是设计允许的，丢了只需重扫）。
-
-### 补不了的三件（别在这上面花设计）
-
-| 想要 | 为什么不行 |
+| 想了解 | 去哪 |
 |---|---|
-| 用插件替换 / 追加系统提示，或自定义输出风格 | `outputStyles` 属 `diagnosticOnly` —— 只记录、不执行 |
-| 让项目覆盖个人偏好（同名 skill / command） | 用户级优先于工作区级是硬编码规则，不是配置项 |
-| 用插件分发子代理、LSP、默认配置 | `agents`、`lspServers`、`settings` 同样不执行 |
+| 单个插件的安装 / 验证 / 回滚 | `plugins/<name>/README.md` |
+| 参与贡献：新增插件 / 技能、hooks 开发规矩、排查手册 | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| ZCode 能力缺口分析（选题依据） | [docs/analysis/zcode-capability-gaps.md](docs/analysis/zcode-capability-gaps.md) |
+| 跨会话设计笔记与账本 | [HANDOFF.md](HANDOFF.md) |
+| 技能目录约定 | [skills/README.md](skills/README.md) |
 
-> 依据与取证命令见 [`docs/analysis/zcode-capability-gaps.md`](docs/analysis/zcode-capability-gaps.md)。
+## 贡献
 
-## 仓库结构
-
-```
-zcode-plugin/                          ← 市场源根目录
-├── marketplace.json                   市场清单（plugins[].source 指向插件目录）
-├── README.md                          本文件 —— 开发库说明与开发约定
-├── HANDOFF.md                         跨会话交接笔记
-├── LICENSE
-├── .gitignore
-├── docs/
-│   └── analysis/
-│       └── zcode-capability-gaps.md   ZCode 能力缺口分析 + 可补足清单（选题依据）
-├── plugins/                           插件源（每目录一个可安装插件）
-│   ├── skill-forge/                   插件本体
-│   │   ├── .zcode-plugin/plugin.json  插件清单
-│   │   ├── README.md                  该插件的安装 / 验证 / 回滚说明
-│   │   ├── commands/                  /skill-forge、/skill-audit
-│   │   └── hooks/                     hooks.json + 钩子脚本 + 自带的 lib/
-│   ├── memory-loop/
-│   │   ├── commands/                  /memory-loop
-│   │   └── hooks/                     ingest-candidates.mjs（Stop）+ recall-memory.mjs（SessionStart）
-│   └── project-guardrails/
-│       ├── commands/                  /guardrails
-│       ├── hooks/                     session-rules.mjs + session-entrypoints.mjs + pretooluse-guard.mjs（+ 自带 lib/）
-│       └── test/                      entrypoints 直调验收（A/B 组 + A14 阈值合流）
-└── skills/                            技能源（独立于插件，手动安装到用户级技能根）
-    ├── README.md                      安装方式与目录约定
-    └── doc-protocol/                  一份自包含技能：通用原则 + 落地层
-        ├── SKILL.md                   协议正文（1~8 节通用原则 / 9 节落地方法）
-        ├── assets/
-        │   └── check-doc-budget.py    体量闸（收尾第 0 步 + 开场注入的数据源）
-        └── references/
-            ├── evidence.md            通用失效模式 E1~E14（抽象，无项目名与数字）
-            └── stock-agent.md         stock-agent 落地实例（载体映射 / 裁定 / 实证全文）
-```
-
-> 钩子脚本一律用 **`.mjs`** 后缀。插件目录里没有 `package.json`，`.js` 能否被当成 ESM
-> 取决于 Node ≥ 22.7 的模块自动探测 —— `.mjs` 是显式的，不依赖 Node 版本。
-
-约定：**插件专属文档放 `plugins/<name>/README.md`；技能自身的说明放 `skills/<name>/`**；
-开发库级约定与跨单元事项写在本文件；技能安装与目录约定写 `skills/README.md`。
-
-## 新增一个插件
-
-1. 建目录 `plugins/<kebab-case-name>/`
-2. 写 `plugins/<name>/.zcode-plugin/plugin.json` —— 最小只需 `name`。
-   **真正能跑的组件只有 5 类**：`commands`、`skills`、`hooks`、`mcpServers`、`userConfig`。
-   `agents` / `outputStyles` / `settings` / `lspServers` 属于 `diagnosticOnly` —— 写进去会被识别、被记录，
-   但**不执行**（详见下方能力缺口文档）
-3. 做内容：`commands/*.md`、`hooks/hooks.json` + 脚本、`skills/<x>/SKILL.md`
-4. 在根 `marketplace.json` 的 `plugins[]` 追加一条：
-
-   ```json
-   { "name": "<name>", "version": "1.0.0", "description": "...",
-     "source": "./plugins/<name>", "category": "productivity" }
-   ```
-
-   **两处版本号要一起动**：`marketplace.json` 的 `plugins[].version` 与插件自己的 `plugin.json` 的 `version`
-5. 本地自测 → commit → GUI 里对该插件执行更新/重装 → **开新会话**验证
-
-命名约束：插件 `name` 必须匹配 `^[a-z0-9][a-z0-9._-]{0,127}$`。
-
-## 新增一个技能
-
-技能与插件的关键差别：**技能没有市场通道** —— 不进 `marketplace.json`，装法是手动落盘。
-
-1. 建目录 `skills/<kebab-case-name>/`，写 `skills/<name>/SKILL.md`：
-
-   ```markdown
-   ---
-   name: <name>
-   description: 做什么 + MUST USE 当：<触发条件，写具体场景与关键词>
-   ---
-
-   # <name>
-   ```
-2. 长内容放 `skills/<name>/references/`（模板、实证、长文档），`SKILL.md` 保持可扫读
-3. 需要打包成插件分发时（要 hooks / commands / 走市场）→ 挪到 `plugins/<name>/skills/<name>/`，
-   按上一节的插件流程走
-4. 安装到用户级技能根并开新会话：
-
-   ```bash
-   cp -r skills/<name> ~/.agents/skills/<name>     # 或 ln -s "$(pwd)/skills/<name>" ~/.agents/skills/<name>
-   ```
-
-命名约束同上。`description` 是**唯一触发依据**，决定它何时被加载 —— 别只写「一个关于 X 的技能」。
-规范细节见官方 `skill-creator` 技能。
-
-> ⚠️ 用户级与项目级**同名**时用户级胜出 —— 分发技能时注意别撞仓库内已有的同名技能。
-
-> **动笔前先读** [`docs/analysis/zcode-capability-gaps.md`](docs/analysis/zcode-capability-gaps.md) ——
-> ZCode 的插件兼容性清单把字段分成 `runnable` / `diagnosticOnly` / `unsupported` 三档，
-> 其中 `agents`、`outputStyles`、`settings`、`lspServers` **只记录不执行**。
-> 也就是**插件无法分发子代理、无法自定义系统提示/输出风格、无法带默认配置**。
-> 那份文档还列了 7 个 hook 事件之外的空白（无 `PreCompact`/`SessionEnd`/`SubagentStop`）
-> 和一份按性价比排序的可做选题清单。
-
-## 开发硬规矩（实测踩过的坑，别重复）
-
-### 清单与结构
-
-- `marketplace.json` 放**仓库根**、插件放 `plugins/` 下 —— 均已实测可用
-- 插件清单目录首选 `.zcode-plugin/`，`.claude-plugin/`、`.codex-plugin/` 也认
-
-### hooks.json
-
-- 用 `"type": "process"` + **args 数组**，不要 `"type": "command"` 拼 shell 引号 —— Windows 上会炸
-- **字段不能混用**：`process` 只认 `command` / `args` / `timeoutMs` / `statusMessage`；
-  `timeout`（秒）属于 `command` 类型。写错字段 → 整条钩子被**静默丢弃**
-- `matcher` 是**大小写敏感正则**。写错 = 永不匹配，且没有任何报错
-- 引用插件自身资源用 `${ZCODE_PLUGIN_ROOT}`；插件**自带** `lib/`，
-  不要 import 用户级 `~/.zcode/hooks/lib/`（用户改自己的库会把插件搞坏）
-- 支持的 7 个事件：`SessionStart` / `UserPromptSubmit` / `PreToolUse` / `PermissionRequest` /
-  `PostToolUse` / `PostToolUseFailure` / `Stop`
-
-### 钩子输出
-
-- 严格 schema：**多一个 key 整个输出作废**
-- 合法顶层 key 只有：`additionalContext` / `continue` / `decision` / `hookSpecificOutput` /
-  `reason` / `stopReason` / `suppressOutput`
-- 注入上下文 → `{ hookSpecificOutput: { hookEventName, additionalContext } }`
-- Stop 拦截并让模型继续 → `{ decision: "block", reason }`
-- **放行 → 空输出 + exit 0**，不要显式写 allow（会覆盖其他钩子的决策）
-- stdin payload 是 **snake_case 与 camelCase 双写**，取值两种都要试
-  （`hook_event_name` / `hookEventName`；`cwd`、`session_id`、`stop_hook_active`、`last_assistant_message` 都拿得到）
-- **插件全局生效**：一套钩子在所有工作区跑，钩子里**不能写死路径**，一律从 payload 的 `cwd` 现算
-
-#### `hookSpecificOutput` 是 7 个分支，字段不能跨事件混用
-
-源码里是 `discriminatedUnion("hookEventName", ...)`，**恰好每个事件一个分支**：
-
-| 事件 | 该分支允许的字段 |
-|---|---|
-| `PreToolUse` | `additionalContext?` + **`permissionDecision?: "allow"\|"ask"\|"deny"`** + `permissionDecisionReason?` + `updatedInput?` |
-| `PermissionRequest` | **`decision?`** —— `{ behavior:"allow", permissionUpdates:[{ type:"addRules", … }] }` 可直接改写权限规则集 |
-| `Stop` / `SessionStart` / `UserPromptSubmit` / `PostToolUse` / `PostToolUseFailure` | **只有 `additionalContext?`** |
-
-⇒ **能影响工具调用的只有 `PreToolUse` 和 `PermissionRequest`**。其余 5 个事件只能注入文本，别指望它们拦东西。
-⇒ `hookEventName` 与当前事件不一致会直接抛错。
-
-#### 多个钩子挂在同一事件上会怎样
-
-| 字段 | 合并方式 |
-|---|---|
-| `additionalContext` | **累积（push 进数组），不覆盖** —— 多个钩子各注入一段，全都生效 |
-| `permissionDecision` | **后者覆盖前者**，最终归并规则是 **`deny` > `ask` > 其它** |
-
-⇒ 推论：一个钩子「没意见」时必须发**空输出**，不能显式发 `allow` —— 那会把别人的 `deny` 冲掉。
-
-#### `async: true` 的真实语义（容易被误解）
-
-```js
-executionMode: type === "command" && async === true ? "background" : "foreground"
-```
-
-- **只对 `type: "command"` 生效**；`type: "process"` 的 schema 里根本没有这个字段
-- 语义是**丢到后台执行**（fire-and-forget），**不是**「延后注入上下文」
-- 适合**纯副作用**钩子（写文件 / 上报），不占用户那一轮
-- 要注入上下文就必须 `foreground`
-
-> 本项目实测：一次前台钩子的总开销约 **85 ms**（node 启动占大头）。
-> 所以 `PreToolUse` 上挂全量 matcher 是**要付代价**的 —— 钩子里的第一件事应该是
-> 「配置文件不存在就立刻退出」这种快速路径。
-
-#### 钩子进程能拿到的环境变量
-
-`ZCODE_PLUGIN_ROOT`（插件安装目录）/ `ZCODE_PLUGIN_DATA`（数据目录，**重装会清空**）/
-`ZCODE_PROJECT_DIR`（＝payload 的 `cwd`）/ `ZCODE_SESSION_ID` / `ZCODE_PLUGIN_ID` /
-`ZCODE_STORAGE_DIR` / `ZCODE_SKILL_DIR` / `ZCODE_APP_VERSION`（`CLAUDE_*` 双写）。
-`hooks.json` 的 `command` / `args` 里可写 `${ZCODE_PLUGIN_ROOT}` 做替换，
-但 `${ZCODE_SESSION_ID}` 在**声明期**替换会抛错，只能在运行时从 env 读。
-
-### 生效机制
-
-| 项 | 行为 |
-|---|---|
-| 本地目录市场 | **不感知文件变化** —— 改了插件内容必须 bump `version`，否则 ZCode 不认为有更新 |
-| hook 配置 | **会话启动时快照**，不热加载 —— 改完必须开新会话 |
-| 工作区级 hooks | **默认「待信任」**（`trustState: pending_trust`）—— 需显式信任才执行，可持久（`trusted_persistent`）；hook 声明摘要一变即 `stale_digest` 失效。插件与用户级配置的 hook 直接派发、无此闸 |
-| 安装缓存 | `~/.zcode/cli/plugins/cache/<marketplace-id>/<plugin>/<version>/` |
-| 市场缓存 | `~/.zcode/cli/plugins/marketplaces/<id>/` 是仓库的**副本**（自带 `.git`），不是软链 |
-| 插件数据目录 | `~/.zcode/cli/plugins/data/<name>@<marketplace>/`，钩子内由环境变量 `ZCODE_PLUGIN_DATA` 给出（回退 `CLAUDE_PLUGIN_DATA`）。**别落 tmpdir** —— 会被系统清 |
-| **重装会清空插件数据目录** | 实测 1.1.0 → 1.1.2 后原本存在的 `nudge-state.json` 消失、目录被重建。⇒ 存在这里的状态**必须能从零重建**，不能当持久存储 |
-| 安装记录 | `~/.zcode/cli/plugins/installed_plugins.json`（`version` / `installPath` / `installedAt` / `scope`） |
-| 启用状态 | `~/.zcode/cli/config.json` → `plugins.enabledPlugins` |
-| 设置页 | 插件的 hooks **只读** —— 不能单独开关某一条，只能整体启用 / 停用插件 |
-
-### 「配置了不生效」排查顺序
-
-1. 同名遮蔽？（skill / command 是**用户级优先于工作区级**，不是项目覆盖全局）
-2. 没开新会话？（hooks 是快照）
-3. 没 bump version？（本地市场不感知变化）
-4. 是工作区级 hooks 还在**待信任**？（默认 `pending_trust`，需显式信任；hook 声明摘要一变即 `stale_digest` 失效）
-5. 先读启动日志确认注册数 —— `hookCount` 是 `0` 就别再查脚本逻辑了，问题在清单 / 启用态
-
-```bash
-grep "bootstrap.app.startup.plugins.completed" ~/.zcode/cli/log/zcode-$(date +%F).jsonl | tail -1
-```
-
-| 日志字段 | 含义 |
-|---|---|
-| `hookCount` | 全局注册到的钩子数（装插件前 `0` → 装后变成插件钩子数） |
-| `commandRootCount` | 命令根数 |
-| `enabledPluginCount` / `pluginCount` | 启用数 / 发现数 |
-| `skillRootCount` | skill **根**数，不是条目数 —— 别拿它对账 skill 数量 |
-
-再交叉验证两件事：
-
-```bash
-# 已装的就是当前源码？
-diff -r plugins/<name> ~/.zcode/cli/plugins/cache/<mkt>/<name>/<ver>
-# 钩子真跑过？（有状态文件 = 进程真起来过，不是只注册）
-ls ~/.zcode/cli/plugins/data/<name>@<mkt>/
-```
-
-### 「装好了」≠「生效了」
-
-重装只换磁盘上的文件，**不会**换正在跑的会话里的钩子。用时间戳分辨：
-
-```bash
-# 重装时刻
-grep -o '"installedAt":"[^"]*"' ~/.zcode/cli/plugins/installed_plugins.json
-# 最近一次会话启动（＝插件被载入的时刻）
-grep "bootstrap.app.startup.plugins.completed" ~/.zcode/cli/log/zcode-$(date +%F).jsonl | tail -1 | grep -o '"timestamp":"[^"]*"'
-```
-
-**后者早于前者 ⇒ 没有任何会话载入过新版本**，当前会话还在跑旧快照 —— 此时别去查脚本逻辑，去**开新会话 / 重启应用**。
-
-日志文件 mtime 是「现在」**不能**证明有会话启动 —— 会话进行中一直在写日志，认 `timestamp` 不认 mtime。
-
-### 权威文档在哪
-
-ZCode **自带**官方 skill，比在线文档全 —— 先读它，别猜：
-
-```
-~/.zcode/cli/plugins/cache/zcode-plugins-official/zcode-guide/<最高版本>/skills/
-├── zcode-configuration-guide/SKILL.md                        路径 / 作用域 / 优先级 / 合并规则
-└── diagnosing-{skills,commands,hooks,plugins,mcp}/SKILL.md   分项排查手册
-```
-
-文档站注意单复数：`/docs/skill`、`/docs/plugin`、`/docs/hooks`（复数 `skills` 是 404）。
-
-文档没写清的运行时契约（环境变量名、字段名），去应用包里翻**官方插件自己的实现**：
-
-```
-<ZCode 安装目录>/resources/glm/packages/<官方插件>/dist/**/*.js
-```
+欢迎 PR。新增插件/技能的完整流程、hooks 输出协议、实测踩坑清单见 [CONTRIBUTING.md](CONTRIBUTING.md)。注意两条红线：插件 `name` 必须匹配 `^[a-z0-9][a-z0-9._-]{0,127}$`；发版时 **plugin.json 与 marketplace.json 的版本号必须一起动**（更新检测口径）。
 
 ## 许可证
 
-**MIT** —— 见根目录 [`LICENSE`](LICENSE)（`Copyright (c) 2026 Jrtou`）。
+**MIT** —— 见 [LICENSE](LICENSE)。
 
-`marketplace.json` 的 `owner.name` 与各插件的 `plugin.json` `author.name` 同为 `Jrtou`，保持一致。
+`impeccable` 插件 vendor 自 [pbakaus/impeccable](https://github.com/pbakaus/impeccable)（**Apache-2.0**，版权属 Paul Bakaus 及贡献者，见 [plugins/impeccable/LICENSE](plugins/impeccable/LICENSE) 与 [NOTICE.md](plugins/impeccable/NOTICE.md)）；其上的适配层随本仓库以 MIT 分发。
