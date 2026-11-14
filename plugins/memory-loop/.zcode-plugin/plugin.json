@@ -1,6 +1,6 @@
 {
   "name": "memory-loop",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Close the memory loop: consume hook-written memory candidates, split them per project, and re-inject distilled memory at session start.",
   "author": {
     "name": "Jrtou"

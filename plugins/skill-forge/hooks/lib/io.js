@@ -12,7 +12,9 @@
 //
 // 原则：任何异常都不应阻塞主会话 —— 解析失败/输出失败一律静默 exit 0。
 
-import { writeSync } from "fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync, writeSync } from "fs";
+import { dirname, resolve } from "path";
+import { homedir } from "os";
 
 /**
  * 异步读取 stdin（Windows 管道必需）。失败返回 {}。
@@ -57,8 +59,48 @@ export function emitContext(eventName, text) {
   });
 }
 
+// ---- 钩子遥测（单人使用的故障可见性）----
+// fail-open 的代价是故障不可见：这里把每次输出/放行同步记一行到
+// ~/.zcode/hooks/plugin-telemetry.jsonl（scripts/healthcheck.mjs 的 E 面汇总）。
+// 三条硬约束：同步写（exit 前落盘）、自带轮转（512KB/2000 行）、任何失败绝不影响钩子。
+// 关闭：PLUGIN_TELEMETRY=off（CI 自动关）。
+const T0 = Date.now();
+const TELEMETRY_PLUGIN = (() => {
+  const seg = import.meta.url.split(/[\\/]/);
+  const i = seg.lastIndexOf("plugins");
+  return i >= 0 ? seg[i + 1] : "unknown";
+})();
+
+function recordTelemetry(outcome, event) {
+  try {
+    if (process.env.PLUGIN_TELEMETRY === "off" || process.env.CI) return;
+    // 路径零输入面：目录是常量（无 env 覆盖）+ resolve 归一 + dirname 包含性校验
+    const dir = resolve(homedir(), ".zcode", "hooks");
+    const file = resolve(dir, "plugin-telemetry.jsonl");
+    if (dirname(file) !== dir) return;
+    try {
+      if (existsSync(file) && statSync(file).size > 512 * 1024) {
+        const lines = readFileSync(file, "utf-8").trimEnd().split("\n");
+        writeFileSync(file, lines.slice(-2000).join("\n") + "\n");
+      }
+    } catch {}
+    mkdirSync(dir, { recursive: true });
+    appendFileSync(
+      file,
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        plugin: TELEMETRY_PLUGIN,
+        event: event ?? null,
+        outcome,
+        ms: Date.now() - T0,
+      }) + "\n",
+    );
+  } catch {}
+}
+
 /** 放行。空输出 + exit 0 即「无意见」，比显式 allow 更稳（不覆盖其他 hook 的决策）。 */
 export function emitPass() {
+  recordTelemetry("pass");
   process.exit(0);
 }
 
@@ -84,6 +126,9 @@ function write(obj) {
     // 管道上的 stdout 写入在 Node 里是异步的，紧跟一个 process.exit(0)
     // 理论上会在数据刷出前终止进程（Windows 尤甚）。同步写 fd 1 写完了才返回，
     // 之后 exit 就是安全的。
+    const out = obj?.hookSpecificOutput;
+    const outcome = obj?.decision === "block" ? "block" : (out?.permissionDecision ?? "context");
+    recordTelemetry(outcome, out?.hookEventName ?? null);
     writeSync(1, JSON.stringify(obj));
   } catch {
     // 输出失败也不阻塞会话。

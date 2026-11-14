@@ -1,0 +1,31 @@
+# 远程第二传感器：单人插件没有外部报障，CI 是不会偷懒的那个。
+# 本地另有每 4 天的定时体检（agent 定时任务）；这里每次 push/PR + 每周一兜底。
+name: health
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "23 1 * * 1" # 每周一 01:23 UTC，错开整点
+
+jobs:
+  healthcheck:
+    runs-on: ubuntu-latest
+    env:
+      PLUGIN_TELEMETRY: "off" # 遥测只在真实钩子进程里跑
+      CI: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check all hook scripts
+        run: |
+          find plugins scripts tests \( -name "*.mjs" -o -name "*.js" \) -print0 | while IFS= read -r -d '' f; do
+            node --check "$f"
+          done
+      - name: Unit tests (node:test)
+        run: node --test tests/*.test.mjs
+      - name: Healthcheck (--ci)
+        run: node scripts/healthcheck.mjs --ci

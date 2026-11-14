@@ -19,9 +19,9 @@ The repository root **is itself a ZCode local plugin marketplace**: add this dir
 
 | Plugin | Version | Kind | One-liner |
 |---|---|---|---|
-| [`skill-forge`](plugins/skill-forge/README.md) | 1.1.4 | mechanism · distillation | After multi-step tasks, automatically distill reusable practices into project-level skills — and fix existing skills in passing |
-| [`memory-loop`](plugins/memory-loop/README.md) | 1.0.2 | mechanism · memory | Consume memory candidates → split per project → distill → re-inject distilled memory at session start |
-| [`project-guardrails`](plugins/project-guardrails/README.md) | 1.1.3 | mechanism · guardrails | Per-project conventions and tool rules + automatic handoff-ledger index injection at session start (zero config) |
+| [`skill-forge`](plugins/skill-forge/README.md) | 1.1.5 | mechanism · distillation | After multi-step tasks, automatically distill reusable practices into project-level skills — and fix existing skills in passing |
+| [`memory-loop`](plugins/memory-loop/README.md) | 1.0.3 | mechanism · memory | Consume memory candidates → split per project → distill → re-inject distilled memory at session start |
+| [`project-guardrails`](plugins/project-guardrails/README.md) | 1.1.4 | mechanism · guardrails | Per-project conventions and tool rules + automatic handoff-ledger index injection at session start (zero config) |
 | [`impeccable`](plugins/impeccable/README.md) | 4.9.1 | capability · design | ZCode adaptation of upstream [pbakaus/impeccable](https://github.com/pbakaus/impeccable): a design vocabulary + AI-slop detector |
 | [`taste-skill`](plugins/taste-skill/README.md) | 2.5.1 | capability · design | ZCode adaptation of upstream [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill): anti-mediocre company-site methodology + Stop completion gate (GATE: PASS) |
 
@@ -105,6 +105,16 @@ cp -r skills/doc-protocol ~/.agents/skills/doc-protocol   # or symlink
 4. **Only `skill-forge` has an extra step**: append the three iron rules to `~/.zcode/AGENTS.md` (copy-paste text in [`plugins/skill-forge/README.md`](plugins/skill-forge/README.md), install step 4). The other four plugins are zero-config — **do not** add anything to AGENTS.md for them: context injection, tool rules, design scanning and the finish gate all come from hooks, and a duplicated rule is a second source of truth (drift is worse than absence)
 
 Requirements: ZCode desktop; hook processes need **Node**; `impeccable`'s design hook uses `sh` from Git Bash on Windows (ZCode's default shell).
+
+## Self-check & tests
+
+```bash
+node --test tests/*.test.mjs       # unit + parity fixtures (incl. the M1 dead-row / Python-truth regression)
+node scripts/healthcheck.mjs       # five-surface check: version reconciliation / byte-level cache diff / spec audit / doc budget / telemetry summary
+node scripts/healthcheck.mjs --ci  # CI mode (skips surfaces that depend on local install state)
+```
+
+Single-user plugins get no bug reports from the outside, so hooks ship **lightweight telemetry**: every emit/pass appends one line to `~/.zcode/hooks/plugin-telemetry.jsonl` (auto-rotated at 512KB / 2000 lines, local file only, nothing leaves the machine; `PLUGIN_TELEMETRY=off` disables). GitHub Actions runs the same healthcheck weekly (see `.github/workflows/health.yml`, Chinese) alongside a local scheduled check.
 
 ## Why these plugins
 

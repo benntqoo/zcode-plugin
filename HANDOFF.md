@@ -48,6 +48,7 @@
 |---|---|---|---|---|
 | 🟡 挂起 | impeccable 上游 issue 跟进 | 二十二 | 已提交 [#1470](https://github.com/pbakaus/impeccable/issues/1470)（Open，needs triage）；触发线=上游回复或要求拆分时处理 | 草稿存 [docs/upstream/impeccable-detector-issue-draft-2026-11-14.md](docs/upstream/impeccable-detector-issue-draft-2026-11-14.md) |
 | 🟡 挂起 | taste-skill 轨二（slop 审计/重设计）+ description 自动触发观察 | 二十三 | 触发线=用户想跑轨二，或下次真实建站会话顺带记录是否自动触发（显式触发名已实证 `taste-skill:design-taste-frontend`） | 夹具在 `D:\Code\taste-skill-test\slop-sample.html`；§23 补记3 |
+| ⏳ 验证点 | 三插件 GUI 更新到 sf 1.1.5 / ml 1.0.3 / pg 1.1.4 后，healthcheck 五面应转全绿 | 25 | 过期判据=下轮定时体检仍报 A/B 面红则升级 🔴；证据见 §25 dogfood | 激活态现为 1.1.4/1.0.2/1.1.3（缺遥测与 M1 后续修复） |
 
 ---
 
@@ -1036,3 +1037,24 @@ stock 短语 / 无出处 proof-figure / 感叹号）。测试流程、验收口�
 - m1 `pretooluse-guard.mjs` 注释改与实际执行顺序一致；m2 删 `guard.mjs` 死导出 `RULES_REL`；m3 memory-loop/skill-forge 的 `findProjectRoot` 标记表补 `.agents` 与 guardrails 对齐（三份拷贝头部互指防再漂移）；m4 `sliceRegion` 无 `to` 时 JS 标题截断 ≠ Python EOF，按推荐方案在注释声明差异不改行为。
 - **版本三件套同步**（plugin.json + marketplace.json + 根 README 双语表）：skill-forge 1.1.4 / memory-loop 1.0.2 / project-guardrails 1.1.3。
 - 未修（💡 未批）：候选 jsonl 轮转、memory-loop io.mjs 死函数 `emitPermission`、本仓库补 A14 式 parity 测试（本次夹具脚本即其雏形，一次性用后已删；复活时从本补记重建）。
+
+**补记3（提交落地 + 安装态核查，同日）**：本段产出分两笔提交——`8ac1151`（README 补录/分工注/AGENTS.md 判定）、`5055bf6`（M1+Minor 修复 + 三插件版本三件套 + .codegraph gitignore，13 文件）。用户 GUI 点更新后核查全绿：`installed_plugins.json` 五插件激活版本 sf 1.1.4 / ml 1.0.2 / pg 1.1.3 / impeccable 4.9.1 / taste-skill 2.5.1，激活缓存与仓库源 `diff -rq` **逐字节一致**（taste-skill 首跑多出的 `.mimosa/` 为扫描器运行时缓存，已清，非内容差异）。缓存旧版本目录（sf 1.1.2/1.1.3 等）为 ZCode 保留行为，激活口径以 installed_plugins.json 为准。
+
+## 2026-11-15(第25段)healthcheck + tests + CI + 钩子遥测落地 —— 单人观测回路闭合（拍板：用户同意 1/2/3 全做 + 每 4 天定时体检，两轮全绿自动暂停）
+
+背景：单人插件的最大风险是无感漂移（钩子静默 fail-open、修复未达安装态）。本段把「发现异常」固化成机器闸。
+
+**产出（本段未提交，待拍板）**：
+
+- `scripts/audit-plugins.mjs` —— 原 gitignored 的 `_audit-plugins.mjs` **入库**（推翻旧「不入库」裁定，理由：CI 必须可跑 + 单一真源；`.gitignore:14 _*.mjs` 不动）。旧副本已删，防双源。
+- `scripts/healthcheck.mjs` —— 五面体检：A 版本三方对账（manifest ↔ marketplace ↔ installed_plugins.json）· B 激活缓存逐字节 diff（`.mimosa` 等运行时缓存跳过）· C 规范审计（子进程跑 audit，ERROR 才 fail）· D 体量闸（本机有 doc-protocol 才跑）· E 遥测摘要（只报不判）。`--ci` 跳过本机面；任何硬失败 exit 1。
+- `tests/`（4 文件 **21 断言**，`node --test tests/*.test.mjs`）—— M1 parity 夹具回归（死行 2 死 2 活三场景）+ 可选 Python 真源闸对照（本机装了才跑，**非 tty 下 Python 默认 GBK 且 `-I` 隔离模式忽略 `PYTHON*` env，必须 `-X utf8` 旗标**——踩坑实录）+ guard 规则匹配 + store 读写去重 + 三插件 findProjectRoot 标记表一致性（m3 回归）。
+- **新测试抓到一个真 bug**：memory-loop `store.mjs readJsonl` 对 `[1,2]` 行不拦（数组 typeof 也是 object）→ 已按 io 库 safeObject 同语义排除数组。
+- **钩子遥测**：三插件 io 库各加 `recordTelemetry`（输出/放行同步记一行到 `~/.zcode/hooks/plugin-telemetry.jsonl`，512KB/2000 行自轮转，`PLUGIN_TELEMETRY=off` / CI 自动关）。**Mimosa 拦截事件**：env 可覆盖目录被判路径穿越（规则正确）→ 采纳其建议改为**目录常量 + resolve 归一 + dirname 包含性校验**，三份实现顺带统一（消漂移）。
+- `.github/workflows/health.yml` —— push/PR + 每周一 CI：语法全扫（vendor 树本地预扫通过）+ tests + `healthcheck --ci`。
+- 版本三件套：sf **1.1.5** / ml **1.0.3** / pg **1.1.4**（plugin.json + marketplace + 根 README 双语表）；README 双语新增「自检与测试」节。
+- **定时体检已建**（agent 定时任务）：每 4 天 09:00 跑 healthcheck，**连续两轮全绿 → 自动 CronPauseSelf**（用户拍板：两轮没问题就等真实问题发生再解决）。
+
+**dogfood 证据（2026-11-15）**：tests 21/21 全绿；`healthcheck --ci` PASS（A/B/C 全绿）；本机全量 healthcheck 现为 **FAIL（3 硬失败）= 预期正确信号**——仓库源已含遥测代码而激活态还在 1.1.4/1.0.2/1.1.3，GUI 更新后即转绿（入账本 ⏳ 验证点）。
+
+**账本对账**：新增 ⏳ 验证点一行（安装态追上新版本）。

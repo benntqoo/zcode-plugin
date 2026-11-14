@@ -30,7 +30,7 @@ export function readJsonl(path) {
     if (!t) continue;
     try {
       const v = JSON.parse(t);
-      if (v && typeof v === "object") out.push(v);
+      if (v && typeof v === "object" && !Array.isArray(v)) out.push(v); // 数组行也算坏行（与 io 库 safeObject 同语义）
     } catch {
       // 坏行跳过
     }

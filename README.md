@@ -19,9 +19,9 @@
 
 | 插件 | 版本 | 类型 | 一句话 |
 |---|---|---|---|
-| [`skill-forge`](plugins/skill-forge/README.md) | 1.1.4 | 机制 · 经验沉淀 | 多步任务后自动把可复用做法沉淀成 skill，并在使用中顺手修正已有 skill |
-| [`memory-loop`](plugins/memory-loop/README.md) | 1.0.2 | 机制 · 记忆闭环 | 消费记忆候选 → 按 cwd 分流 → 蒸馏 → 会话开始自动注入 |
-| [`project-guardrails`](plugins/project-guardrails/README.md) | 1.1.3 | 机制 · 项目护栏 | 项目级约定与工具规则 + 会话开场自动注入待办账本索引（零配置） |
+| [`skill-forge`](plugins/skill-forge/README.md) | 1.1.5 | 机制 · 经验沉淀 | 多步任务后自动把可复用做法沉淀成 skill，并在使用中顺手修正已有 skill |
+| [`memory-loop`](plugins/memory-loop/README.md) | 1.0.3 | 机制 · 记忆闭环 | 消费记忆候选 → 按 cwd 分流 → 蒸馏 → 会话开始自动注入 |
+| [`project-guardrails`](plugins/project-guardrails/README.md) | 1.1.4 | 机制 · 项目护栏 | 项目级约定与工具规则 + 会话开场自动注入待办账本索引（零配置） |
 | [`impeccable`](plugins/impeccable/README.md) | 4.9.1 | 能力 · 设计 | 上游 [pbakaus/impeccable](https://github.com/pbakaus/impeccable) 的 ZCode 适配版：设计词汇表 + AI-slop 检测器 |
 | [`taste-skill`](plugins/taste-skill/README.md) | 2.5.1 | 能力 · 设计 | 上游 [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) 的 ZCode 适配版：反平庸公司站建站方法论 + Stop 完成闸门（GATE: PASS） |
 
@@ -105,6 +105,16 @@ cp -r skills/doc-protocol ~/.agents/skills/doc-protocol   # 或 ln -s 软链
 4. **仅 skill-forge 有额外一步**：把三条铁律追加到 `~/.zcode/AGENTS.md`（可复制全文见 [`plugins/skill-forge/README.md`](plugins/skill-forge/README.md)「安装」第 4 步）。其余四个插件零配置，**不需要**往 AGENTS.md 写任何说明——约定注入、工具规则、设计扫描、完成闸门全部由钩子自带，重复写会形成第二个真值源，漂移比缺失更糟
 
 要求：ZCode 桌面版；钩子进程依赖 **Node**；`impeccable` 的设计钩子在 Windows 走 Git Bash 的 `sh`（ZCode 默认 shell 即是）。
+
+## 自检与测试
+
+```bash
+node --test tests/*.test.mjs       # 单元 + parity 夹具（含 M1 死行判定对齐 Python 真源的回归）
+node scripts/healthcheck.mjs       # 五面体检：版本三方对账 / 缓存逐字节 / 规范审计 / 体量闸 / 遥测摘要
+node scripts/healthcheck.mjs --ci  # CI 模式（跳过依赖本机安装态的检查面）
+```
+
+单人使用没有外部报障渠道，所以钩子自带**轻量遥测**：每次输出/放行同步追加一行到 `~/.zcode/hooks/plugin-telemetry.jsonl`（512KB / 2000 行自动轮转，本机文件、无任何上报；`PLUGIN_TELEMETRY=off` 关闭）。GitHub Actions 每周一跑同一套体检（[`.github/workflows/health.yml`](.github/workflows/health.yml)），配合本地定时体检构成双传感器。
 
 ## 为什么是这些插件
 

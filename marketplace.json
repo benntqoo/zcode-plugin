@@ -7,21 +7,21 @@
   "plugins": [
     {
       "name": "skill-forge",
-      "version": "1.1.4",
+      "version": "1.1.5",
       "description": "Auto-distill reusable skills after multi-step tasks, and keep the skill library fresh and within budget.",
       "source": "./plugins/skill-forge",
       "category": "productivity"
     },
     {
       "name": "memory-loop",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "description": "Close the memory loop: consume hook-written memory candidates, split them per project, and re-inject distilled memory at session start.",
       "source": "./plugins/memory-loop",
       "category": "productivity"
     },
     {
       "name": "project-guardrails",
-      "version": "1.1.3",
+      "version": "1.1.4",
       "description": "Per-project guardrails on a user-level plugin. Zero-config by default: a repo with a handoff ledger carrier gets the ledger index + doc-size budget injected at SessionStart (convention over configuration). Declare `context`, tool rules and `entrypoints` in <repo>/.agents/guardrails.json (fallback .zcode/) to override or to turn it off.",
       "source": "./plugins/project-guardrails",
       "category": "productivity"
