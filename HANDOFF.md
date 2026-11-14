@@ -46,7 +46,7 @@
 
 | 状态 | 事项 | 来源段 | 下一步 / 触发线 / 验证日期 | 备注 |
 |---|---|---|---|---|
-| 🟡 挂起 | impeccable 上游口径反馈 issue | 二十二 | 草稿已备 [docs/upstream/impeccable-detector-issue-draft-2026-11-14.md](docs/upstream/impeccable-detector-issue-draft-2026-11-14.md)，待用户提交，提交后回填 issue 链接 | 英文正文可整段复制；维护者要求拆分时各节自带复现 |
+| 🟡 挂起 | impeccable 上游 issue 跟进 | 二十二 | 已提交 [#1470](https://github.com/pbakaus/impeccable/issues/1470)（Open，needs triage）；触发线=上游回复或要求拆分时处理 | 草稿存 [docs/upstream/impeccable-detector-issue-draft-2026-11-14.md](docs/upstream/impeccable-detector-issue-draft-2026-11-14.md) |
 
 ---
 
@@ -934,3 +934,7 @@ critique 实测 → P0 修复（GUI 引导 3 轮：只修 2 条 P0 / 文案对�
 [docs/upstream/impeccable-detector-issue-draft-2026-11-14.md](docs/upstream/impeccable-detector-issue-draft-2026-11-14.md)
 （英文正文可整段复制进 https://github.com/pbakaus/impeccable/issues/new ，含复现片段；
 🟡 行留待用户实际提交后回填链接）。
+
+**补记2（issue 已提交）**：用户于 2026-11-14 提交
+[pbakaus/impeccable#1470](https://github.com/pbakaus/impeccable/issues/1470)（Open，覆盖三条 finding，
+自动打 `needs triage`，尚无维护者回复）。账本行改挂「上游回复」触发线。
