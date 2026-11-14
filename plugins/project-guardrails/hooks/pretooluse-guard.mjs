@@ -1,8 +1,9 @@
 // PreToolUse 钩子 —— 执行 <repo>/.agents/guardrails.json（优先）或 <repo>/.zcode/guardrails.json 里的工具规则。
 //
 // matcher 在 hooks.json 里**故意省略**（= 匹配所有工具），因为规则可以针对任意工具。
-// 代价是每次工具调用都会 spawn 一次本进程，所以第一件事就是检查规则文件是否存在 ——
-// 没有就立刻退出，把开销压到 node 启动本身。
+// 代价是每次工具调用都会 spawn 一次本进程。实际顺序：读 stdin → 认事件 → 就近定位
+// 项目根（逐级 existsSync）→ loadGuardrails 里才做规则文件存在性检查 —— 没有规则
+// 文件就立刻退出，总开销 ≈ node 启动 + 一次目录上行。
 //
 // 输出：hookSpecificOutput.permissionDecision = "deny" | "ask"。
 // 多方决策合并规则是 deny > ask > 其它；「放行」= 空输出，绝不显式发 allow。

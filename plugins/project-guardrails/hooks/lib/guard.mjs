@@ -20,9 +20,6 @@ import { join } from "node:path";
  */
 export const RULES_RELS = [".agents/guardrails.json", ".zcode/guardrails.json"];
 
-/** 兼容旧名（v1.0.0 只有单路径）。 */
-export const RULES_REL = RULES_RELS[1];
-
 /**
  * 找并解析项目配置文件。找不到 → null。
  *

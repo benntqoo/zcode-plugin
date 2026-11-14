@@ -19,9 +19,9 @@
 
 | 插件 | 版本 | 类型 | 一句话 |
 |---|---|---|---|
-| [`skill-forge`](plugins/skill-forge/README.md) | 1.1.3 | 机制 · 经验沉淀 | 多步任务后自动把可复用做法沉淀成 skill，并在使用中顺手修正已有 skill |
-| [`memory-loop`](plugins/memory-loop/README.md) | 1.0.1 | 机制 · 记忆闭环 | 消费记忆候选 → 按 cwd 分流 → 蒸馏 → 会话开始自动注入 |
-| [`project-guardrails`](plugins/project-guardrails/README.md) | 1.1.2 | 机制 · 项目护栏 | 项目级约定与工具规则 + 会话开场自动注入待办账本索引（零配置） |
+| [`skill-forge`](plugins/skill-forge/README.md) | 1.1.4 | 机制 · 经验沉淀 | 多步任务后自动把可复用做法沉淀成 skill，并在使用中顺手修正已有 skill |
+| [`memory-loop`](plugins/memory-loop/README.md) | 1.0.2 | 机制 · 记忆闭环 | 消费记忆候选 → 按 cwd 分流 → 蒸馏 → 会话开始自动注入 |
+| [`project-guardrails`](plugins/project-guardrails/README.md) | 1.1.3 | 机制 · 项目护栏 | 项目级约定与工具规则 + 会话开场自动注入待办账本索引（零配置） |
 | [`impeccable`](plugins/impeccable/README.md) | 4.9.1 | 能力 · 设计 | 上游 [pbakaus/impeccable](https://github.com/pbakaus/impeccable) 的 ZCode 适配版：设计词汇表 + AI-slop 检测器 |
 | [`taste-skill`](plugins/taste-skill/README.md) | 2.5.1 | 能力 · 设计 | 上游 [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) 的 ZCode 适配版：反平庸公司站建站方法论 + Stop 完成闸门（GATE: PASS） |
 

@@ -336,10 +336,13 @@ function splitCells(line) {
   return cells;
 }
 
-/** 完成行判定：**成对** `~~`（不是单个）。 */
-function hasPairedStrike(cell) {
-  const n = (cell.match(/~~/g) || []).length;
-  return n >= 2 && n % 2 === 0;
+// 完成行判定，与 check-doc-budget.py 的 `_is_completed_row` 同语义：
+// 先剥掉行内反引号 span（span 里的 `~~` 是字面引用，不是删除线），再对整行找 `~~` ——
+// 单个 `~~` 也算完成行。旧实现「成对 `~~` + 只查前两格」与 Python 三处不一致，已对齐。
+const INLINE_CODE_RE = /`+[^`\n]*`+/g;
+
+function isCompletedRow(line) {
+  return line.replace(INLINE_CODE_RE, "").includes("~~");
 }
 
 /** 状态判定：先第 1 格、再第 2 格；同格内取出现位置最靠前的。 */
@@ -444,9 +447,9 @@ function buildTableBlock(root, spec) {
     if (cells.length === 0) continue;
     total += 1;
 
-    // 完成行 → 丢弃（「未完成投影」不变量）。查第 1、2 格：账本有的把 `~~` 放在状态格，
-    // 有的放在「事项」格，两种都得认。
-    if (hasPairedStrike(cells[0] || "") || hasPairedStrike(cells[1] || "")) continue;
+    // 完成行 → 丢弃（「未完成投影」不变量）。与 Python 同判**整行**：
+    // `~~` 落在状态格、事项格、备注格都算，剥掉反引号 span 后单个 `~~` 也算。
+    if (isCompletedRow(line)) continue;
 
     const st = findStatus(cells);
     if (!st) {
@@ -531,7 +534,7 @@ function buildBudgetBlock(root, spec) {
         regionBytes += Buffer.byteLength(lines[i], "utf-8");
         if (i < end - 1) regionBytes += 1;
         const line = lines[i];
-        if (ROW_RE.test(line) && !SEP_RE.test(line) && hasPairedStrike(splitCells(line)[0] || "")) dead += 1;
+        if (ROW_RE.test(line) && !SEP_RE.test(line) && isCompletedRow(line)) dead += 1;
       }
       // 死行是**硬违规**，不能因为「没超字节预算」就不报 —— 它单独出现时也要显示。
       const tail = [];

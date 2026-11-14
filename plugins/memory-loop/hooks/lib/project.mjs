@@ -16,16 +16,23 @@ export function normPath(p) {
   return s;
 }
 
+/** 项目根标记：`.git` / `.zcode` / `.agents` 同等权重，就近者赢 —— 与 project-guardrails 同表。 */
+const ROOT_MARKERS = [".git", ".zcode", ".agents"];
+
 /**
- * 从 start 向上找项目根：**就近的标记赢**，`.git` 与 `.zcode` 同等权重。
+ * 从 start 向上找项目根：**就近的标记赢**，三个标记同等权重。
  *
  * 为什么不是「.git 绝对优先」：ZCode 自己的发现顺序是越深的 `.zcode/skills`
  * 优先级越高。落点必须与之一致，否则文件写了不生效。
+ *
+ * ⚠️ 三个插件（skill-forge / memory-loop / project-guardrails）的标记表必须一致，
+ * 否则同一工作区会算出不同的「项目根」—— candidates/skills 与 guardrails 规则
+ * 落进不同目录。改这里之前先看另外两份。
  */
 export function findProjectRoot(start) {
   let dir = resolve(start);
   for (let i = 0; i < MAX_UP; i++) {
-    if (existsSync(join(dir, ".git")) || existsSync(join(dir, ".zcode"))) return dir;
+    if (ROOT_MARKERS.some((m) => existsSync(join(dir, m)))) return dir;
     const parent = dirname(dir);
     if (parent === dir) break;
     dir = parent;

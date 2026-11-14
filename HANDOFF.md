@@ -1030,3 +1030,9 @@ stock 短语 / 无出处 proof-figure / 感叹号）。测试流程、验收口�
 **产出（本段未提交，待拍板）**：README.md / README.en.md 各三处 —— ①插件表补 taste-skill 行（2.5.1；贡献规则本要求表与 plugin.json 同步，属补欠账）②新增 taste-skill 小节 + 两设计插件分工注（含 ui-ux-pro-max 显式调用口径）③License 节补 taste-skill vendor 来源（MIT, Leonxlnx）。账本无新增行（禁用为用户手操，非会话待办）。
 
 **补记1（AGENTS.md 需求判定 + 安装节修正）**：用户问「插件是否需要在 AGENTS.md 加说明」。按 doc-protocol 准入测试逐插件判定：**五个插件只有 skill-forge 需要**（SessionStart matcher 仅 `compact|clear`，正常启动不注入，三条铁律主渠道 = `~/.zcode/AGENTS.md`；plugin README §4 已备可复制全文）；memory-loop / project-guardrails / impeccable / taste-skill 全部钩子自带零配置，不需要——写了即双源漂移。据此改 README 双语安装节：补「仅 skill-forge 有第 4 步」+ 其余四插件显式声明不需要 AGENTS.md；顺手修 skill-forge 小节的错话「装完即生效，无需配置」→「钩子装完即生效；铁律需追加 AGENTS.md 才常驻」。snippet 不复制进根 README（plugin README §4 单一真值；用户全局 AGENTS.md 版本已比它多出多条演化判据，正是双源漂移实证）。
+
+**补记2（五插件代码审查 + M1/Minor 修复，本段未提交待拍板）**：code-quality-review 全流程跑完（1782 行精读 + node --check 17/17 + 审计/体量闸），结论 Critical 0 / Major 1 / Minor 4 / 建议 3。**已修（用户批准 M1+Minor）**：
+- **M1 死行判定与 Python 真源三处漂移**（entrypoints.mjs）：`hasPairedStrike`（成对+只查前两格）→ `isCompletedRow`（剥反引号 span 后整行找 `~~`，单个即死），表格块与预算块两处调用点同步换。**夹具回归**：单 `~~` 行 / 备注格 `~~` 行 / 反引号引用行三种场景，node 注入器与 check-doc-budget.py 跑同一夹具数字全合流（317 B / 2 死行 / 2 活跃，连字节都对上；python exit 1 为夹具含死行的预期闸行为）。
+- m1 `pretooluse-guard.mjs` 注释改与实际执行顺序一致；m2 删 `guard.mjs` 死导出 `RULES_REL`；m3 memory-loop/skill-forge 的 `findProjectRoot` 标记表补 `.agents` 与 guardrails 对齐（三份拷贝头部互指防再漂移）；m4 `sliceRegion` 无 `to` 时 JS 标题截断 ≠ Python EOF，按推荐方案在注释声明差异不改行为。
+- **版本三件套同步**（plugin.json + marketplace.json + 根 README 双语表）：skill-forge 1.1.4 / memory-loop 1.0.2 / project-guardrails 1.1.3。
+- 未修（💡 未批）：候选 jsonl 轮转、memory-loop io.mjs 死函数 `emitPermission`、本仓库补 A14 式 parity 测试（本次夹具脚本即其雏形，一次性用后已删；复活时从本补记重建）。

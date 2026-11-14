@@ -36,3 +36,5 @@ __pycache__/
 
 # impeccable 引擎二进制首跑下载位（仅插件安装缓存需要；仓库源树内被误跑时拦下）
 plugins/impeccable/skills/impeccable/scripts/bin/
+
+.codegraph/
