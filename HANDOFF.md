@@ -1,9 +1,10 @@
 # HANDOFF — zcode-plugin 市场
 
-> 更新：2026-10-16
-> 状态：仓库定位已扩为「**插件 + 技能开发库**」—— `plugins/` 3 个插件、`skills/` 1 个技能。
+> 更新：2026-11-14
+> 状态：仓库定位已扩为「**插件 + 技能开发库**」—— `plugins/` 4 个插件、`skills/` 1 个技能。
 > **三个插件均已安装生效**：`skill-forge` 1.1.2、`memory-loop` 1.0.0、`project-guardrails` 1.1.1
 > （仓库源分别是 1.1.2 / **1.0.1** / **1.1.2** —— 后两者待重装，见账本）。
+> 新增 `impeccable`（上游 pbakaus/impeccable 的 vendor 适配，仓库源 4.9.1）**待安装**，见「二十」。
 > 新会话直接从这里接。
 >
 > 第一 ~ 十节是 `skill-forge` 的交接笔记；新插件见「十一」；`skills/` 目录与 doc-protocol 见「十二」
@@ -46,7 +47,7 @@
 
 | 状态 | 事项 | 来源段 | 下一步 / 触发线 / 验证日期 | 备注 |
 |---|---|---|---|---|
-| ⏳ 验证点 | 开场注入切换到真账本 | 十八 | 下一次 **cwd=`zcode-plugin`** 的会话开场核对 `[entrypoints]` 块：只列本表行、死行 0 | 机制已在 stock-agent 侧实证（十九）；本仓库尚无该 cwd 的会话 |
+| 🔴 待办 | impeccable 插件安装 + 引擎预热 | 二十 | GUI 安装 + 开新会话；装后首跑任一动词预热引擎下载（落 ~/.impeccable） | 上游能力 vendor 适配，见「二十」 |
 | 🔴 待办 | memory-loop 重装 1.0.1 | 十八 | GUI 更新 + 开新会话 | 仅 README 措辞，无功能变化 |
 | 🔴 待办 | project-guardrails 重装 1.1.2 | 十八补记 | GUI 更新 + 开新会话 | 仅测试文件差异，可与 1.0.1 顺手一起 |
 
@@ -805,3 +806,52 @@ A19/A19b config 自动发现），37 → **42** 全绿 —— 共享 fixture 不
   0 死行，附 `instructions.missing` warning（本仓库无 `AGENTS.md`，该面显式标为「未受检」）。
 - stock-agent 侧切换前后**同一组** violations / warnings（`ledger.bytes`、`addenda.per_segment`、
   `ledger.items`、`ledger.row_bytes`），仅行数读数修正：33 → 32（表头行不再计入数据行）。
+
+---
+
+## 2026-11-14(第20段)impeccable ZCode 适配插件落地 — plugins/impeccable 就绪，待安装
+
+**做了什么**（评估 → 用户拍板 B 路线 → 实现）：
+
+- **评估**上游 pbakaus/impeccable 4.9.1（设计词汇表：1 skill + 24 动词 + Rust 引擎 62 条检测器 +
+  设计钩子）：19 个 provider 无 zcode；但三条天然兼容 —— `.agents/` 产物 frontmatter 恰好 =
+  ZCode 允许字段集（name/description/metadata）；hook 引擎 `resolve_harness` 对 Claude 风格
+  snake_case 信封 **fallback=claude**（crates/hook/hook_lib.rs:1936）；skill 自定位
+  （`<skill-dir>/scripts/impeccable context`）。用户三选一拍板 **B：本仓库出插件**。
+- **vendor**：上游 commit `1995764` 的 `.agents/skills/impeccable/` → `plugins/impeccable/skills/`
+  （排除 Codex 专用 `agents/*.toml`；保留 LICENSE + NOTICE.md，Apache-2.0；SKILL.md/reference/scripts
+  不改动，更新走机械 diff）。插件版本号 = 上游版本号 4.9.1。
+- **适配层**：`commands/impeccable.md`（动词路由）+ `hooks/design-hook.mjs`（PostToolUse 桥）+
+  `hooks/hooks.json`（**v1 只接 PostToolUse `Edit|Write`**，SessionStart/Stop 补全 JSON 放插件 README，
+  避免非 UI 会话固定开销）；wrapper 不设 `IMPECCABLE_HOOK_HARNESS`（吃 fallback=claude）。
+- **周边**：根 README（4 插件 + 机制/能力定位区分）、marketplace.json（4 条目）、
+  `.gitignore`（`scripts/bin/` 首跑下载位）、插件 README（来源/runbook/钩子说明）。
+
+**验证证据**：
+
+- 3 份 JSON 合法；`git check-ignore` 全绿；doc-budget 体量闸 **exit 0**。
+- 启动器链路（本机 Git Bash）：正确探测引擎 0.1.24、正确选 `impeccable-windows-x64` asset、
+  失败时报错含可操作指引。
+- **wrapper 三个真 bug**（全部在 win32 + Git Bash 下复现后修复）：① 反斜杠路径喂 MSYS sh →
+  启动器 dirname 错位（bin 搜索跑到仓库根、VERSION 读空、exit 127）→ 传正斜杠路径；
+  ② child stderr 手工 data 转发与 `process.exit` 竞态丢输出 → 改 `inherit`；
+  ③ attempts 索引滑位（sh 形态启动器在 argv[0]、cmd 形态在 argv[1]，统一查 argv[1] 使 sh 永远跳过）→
+  显式携带 launcherPath。修复后 sh 主路径触发、退出码如实传导。
+- **引擎 E2E 受限**：本会话沙箱拦 `release-assets.githubusercontent.com`（github.com 放行、发布 CDN
+  不放行），下载链路只能验证到报错语义；`cargo build --release -p impeccable` 源码编译补 E2E（见补记）。
+
+**账本动作**：⏳「开场注入验证」行完成投影（本会话 cwd 命中，`[entrypoints]` 块与表一致）
+→ `docs/archive/handoff-ledger-2026-11.md` 开档；+1 行（impeccable 安装 + 预热，用户侧）。
+
+**未提交**：本会话工作区是 detached HEAD worktree（`ea1e`），全部改动停留工作区 ——
+落地需在 worktree 提交分支后并入 `main`（或由用户决定处置），**不要直接在 detached HEAD 上提交**。
+
+**方法论沉淀**：`.zcode/skills/upstream-skill-port/SKILL.md`（跨工具 skill → ZCode 插件的适配法）。
+
+**补记1（引擎 E2E 补全）**：`cargo build --release -p impeccable` 在本机 stable 工具链
+（`RUSTUP_TOOLCHAIN=` 绕 rust-toolchain.toml 的 wasm target，免 rustup 联网）4 分钟编成；
+以 `IMPECCABLE_BIN` 注入后全链路验证 —— ① 启动器握手报 4.9.1；② `detect` 对样例 HTML
+命中全部 3 条埋入的 anti-pattern（low-contrast / overused-font / ai-color-palette）；
+③ wrapper → sh → 引擎 `hook` 动词：对真实 slop 内容检出 low-contrast，并以 Claude 风格
+`hookSpecificOutput.additionalContext` 信封返回（ZCode 原生消费），exit 0。
+**引擎 E2E 通过，仅引擎下载通道在本会话沙箱不可用**（生产环境不受影响）。

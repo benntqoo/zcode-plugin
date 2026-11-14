@@ -1,0 +1,18 @@
+{
+  "description": "impeccable design hook: after each Edit/Write, the vendored engine's hook verb scans the touched UI files for AI-slop patterns. v1 ships PostToolUse only; optional SessionStart/Stop wiring is documented in the plugin README. The wrapper never blocks: any launcher failure exits 0.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "process",
+            "command": "node",
+            "args": ["${ZCODE_PLUGIN_ROOT}/hooks/design-hook.mjs"],
+            "timeoutMs": 10000
+          }
+        ]
+      }
+    ]
+  }
+}

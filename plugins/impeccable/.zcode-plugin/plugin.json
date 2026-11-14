@@ -1,0 +1,19 @@
+{
+  "name": "impeccable",
+  "version": "4.9.1",
+  "description": "Design fluency for frontend work, vendored from upstream impeccable for ZCode: the impeccable skill (24 design verbs), a /impeccable command router, and a PostToolUse design hook that scans edited UI files.",
+  "author": {
+    "name": "Jrtou"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "design",
+    "frontend",
+    "ux",
+    "skill",
+    "anti-patterns"
+  ],
+  "commands": "commands",
+  "hooks": "./hooks/hooks.json",
+  "skills": "./skills"
+}

@@ -25,6 +25,13 @@
       "description": "Per-project guardrails on a user-level plugin. Zero-config by default: a repo with a handoff ledger carrier gets the ledger index + doc-size budget injected at SessionStart (convention over configuration). Declare `context`, tool rules and `entrypoints` in <repo>/.agents/guardrails.json (fallback .zcode/) to override or to turn it off.",
       "source": "./plugins/project-guardrails",
       "category": "productivity"
+    },
+    {
+      "name": "impeccable",
+      "version": "4.9.1",
+      "description": "Design fluency for frontend work, vendored from upstream impeccable for ZCode: the impeccable skill (24 design verbs), a /impeccable command router, and a PostToolUse design hook that scans edited UI files.",
+      "source": "./plugins/impeccable",
+      "category": "other"
     }
   ]
 }

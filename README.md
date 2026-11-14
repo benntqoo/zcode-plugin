@@ -10,10 +10,11 @@
 | 怎么分发 | 走市场 —— 仓库根本身就是市场源，ZCode「Add marketplace → 本地目录」指向它 | **无独立分发通道**，手动复制 / 软链到 `~/.agents/skills/`（见 [`skills/README.md`](skills/README.md)） |
 | 怎么生效 | 安装插件 + **开新会话** | 落到技能根 + **开新会话或 `/clear`** |
 
-- 当前收录：**3** 个插件、**1** 个技能
+- 当前收录：**4** 个插件、**1** 个技能
   - 插件：[`skill-forge`](plugins/skill-forge/README.md) —— 多步任务后沉淀可复用 skill
   - 插件：[`memory-loop`](plugins/memory-loop/README.md) —— 闭合记忆回路：候选分流 → 蒸馏 → 会话注入
   - 插件：[`project-guardrails`](plugins/project-guardrails/README.md) —— 项目级约定与工具规则（用户级钩子代为执行）+ 会话开场注入待办账本索引
+  - 插件：[`impeccable`](plugins/impeccable/README.md) —— 上游 [pbakaus/impeccable](https://github.com/pbakaus/impeccable) 的 ZCode 适配版：设计词汇表 skill（24 动词）+ `/impeccable` 命令 + PostToolUse 设计钩子
   - 技能：[`doc-protocol`](skills/doc-protocol/SKILL.md) —— 文档职责路由与进度真值协议（自包含：通用原则 + 落地层，内含 stock-agent 实例）
 - 远端：`git@github.com:benntqoo/zcode-plugin.git`（`main`）
 
@@ -35,6 +36,7 @@
 | `skill-forge` | 1.1.2 | 多步任务后自动沉淀可复用 skill，并在使用中顺手修正已有 skill（2 个命令 + Stop/SessionStart 钩子） | [plugins/skill-forge/README.md](plugins/skill-forge/README.md) |
 | `memory-loop` | 1.0.1 | 消费上游 `stop-memory.js` 产出的记忆候选：Stop 按 cwd 分流到各项目并去重，SessionStart 把蒸馏后的 `MEMORY.md` 注入上下文。1 个命令 + 2 个钩子 | [plugins/memory-loop/README.md](plugins/memory-loop/README.md) |
 | `project-guardrails` | 1.1.2 | 项目级约定与工具规则 + **会话开场索引**。`entrypoints[]`（待办账本索引 + 体量状态）**零配置**：仓库里只要有账本载体就自动注入，无需写配置文件；`context[]` / `rules[]` 按需在 `<repo>/.agents/guardrails.json`（回退 `.zcode/`）声明。1 个命令 + 3 个钩子 | [plugins/project-guardrails/README.md](plugins/project-guardrails/README.md) |
+| `impeccable` | 4.9.1 | 上游 [pbakaus/impeccable](https://github.com/pbakaus/impeccable) 的 **vendor 适配**（版本号 = 上游版本号）：1 个设计 skill + `/impeccable` 命令路由 + PostToolUse 设计钩子（v1 只接 PostToolUse，SessionStart/Stop 可按插件 README 追加）。引擎二进制首跑下载、不经本仓库分发 | [plugins/impeccable/README.md](plugins/impeccable/README.md) |
 
 `memory-loop` 是「下游」性质的插件 —— 它假设上游已有某个钩子在写记忆候选（默认对接
 `~/.zcode/hooks/memory-candidates.jsonl`）。没有上游时它不会报错，只是什么也不做。
@@ -42,7 +44,11 @@
 `project-guardrails` 是**补充**而非替代：用户级的 `~/.zcode/hooks/guard-bash.js` 依旧是全局兜底黑名单，
 本插件只叠加**项目级增量规则**。两者在 `PreToolUse` 上共存 —— 多方决策按 `deny > ask > 其它` 归并。
 
-两份插件的完整设计笔记见根目录 [`HANDOFF.md`](HANDOFF.md)。
+`impeccable` 与其余三者性质不同：前三个补的是 ZCode 的「机制」，它引入的是**能力**
+（上游设计方法论 + 确定性检测器），以 vendor 适配层（wrapper / hooks / 命令路由）接入。
+更新走插件 README 里的 re-vendor runbook。
+
+两份机制插件的完整设计笔记见根目录 [`HANDOFF.md`](HANDOFF.md)。
 
 ## 已收录技能
 
