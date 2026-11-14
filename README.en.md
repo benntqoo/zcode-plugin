@@ -23,6 +23,7 @@ The repository root **is itself a ZCode local plugin marketplace**: add this dir
 | [`memory-loop`](plugins/memory-loop/README.md) | 1.0.1 | mechanism · memory | Consume memory candidates → split per project → distill → re-inject at session start |
 | [`project-guardrails`](plugins/project-guardrails/README.md) | 1.1.2 | mechanism · guardrails | Per-project conventions and tool rules + automatic handoff-ledger index injection at session start (zero config) |
 | [`impeccable`](plugins/impeccable/README.md) | 4.9.1 | capability · design | ZCode adaptation of upstream [pbakaus/impeccable](https://github.com/pbakaus/impeccable): a design vocabulary + AI-slop detector |
+| [`taste-skill`](plugins/taste-skill/README.md) | 2.5.1 | capability · design | ZCode adaptation of upstream [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill): anti-mediocre company-site methodology + Stop completion gate (GATE: PASS) |
 
 #### skill-forge — automatic experience distillation
 
@@ -30,7 +31,7 @@ When a task took 5+ steps, bypassed a non-obvious pitfall, or settled a conventi
 
 - **Commands**: `/skill-forge` (manual distillation) · `/skill-audit` (skill-library budget & shadowing audit)
 - **Hooks**: `Stop` (distillation nudge) + `SessionStart` (re-inject rules after compact/clear)
-- **Usage**: works out of the box, zero config
+- **Usage**: hooks work out of the box; the three iron rules must be appended to `~/.zcode/AGENTS.md` to stay resident (primary channel — the hook only re-injects after compact/clear). Copy-paste text in its README, install step 4
 
 #### memory-loop — closing the memory loop
 
@@ -76,6 +77,16 @@ npx impeccable detect src/
 
 > The engine binary downloads on first run (checksum-verified). When upstream releases a new version, follow the re-vendor runbook in the plugin README.
 
+#### taste-skill — anti-mediocre site building (vendored adaptation)
+
+The upstream "give coding agents taste" frontend skill (111k+ stars): deals palettes / font pairings / hero layouts by six business categories, mandates real photographs and real product UI, and runs a five-viewport headless-Chrome consistency check plus a `gate.mjs` completion gate (holds session close until `GATE: PASS`). Vendored untouched; the ZCode bridge is a `/taste-skill` command plus a plugin-level Stop hook (the upstream `hooks:` block inside skill frontmatter is silently ignored by ZCode).
+
+- **Command**: `/taste-skill <brief or goal>` (the trigger sentence sits beyond ZCode's 250-char description injection window, so auto-triggering is weak — name it explicitly when unsure)
+- **Hook**: `Stop` (completion gate; always releases when unarmed / errored / another session holds the build — never traps)
+- **Requirements**: Node 22+; Chrome / Edge / Chromium (the gate runs a headless browser)
+
+> **Division of labor between the two design plugins**: building a company site / landing page → `taste-skill` (from scratch, gate-enforced); reviewing / fixing an existing interface (dashboards, components included) → `impeccable` (critique / detect / polish). Design-system selection for app-style UI (SaaS backends, mobile) is out of scope for both — **explicitly call** an external selection skill (e.g. `ui-ux-pro-max`) when needed; with these two design capabilities in place, such skills no longer need auto-triggering — keeping a manual entry is enough.
+
 ### Skill (manual install)
 
 | Skill | What it does |
@@ -91,6 +102,7 @@ cp -r skills/doc-protocol ~/.agents/skills/doc-protocol   # or symlink
 1. ZCode → **Settings → Plugins** → **Create → Add marketplace** → pick this repository directory (clone it locally)
 2. Click **Install** on the plugins you want (enabled by default)
 3. **Start a new session** — hook configuration is snapshotted at session start; running sessions do not hot-reload
+4. **Only `skill-forge` has an extra step**: append the three iron rules to `~/.zcode/AGENTS.md` (copy-paste text in [`plugins/skill-forge/README.md`](plugins/skill-forge/README.md), install step 4). The other four plugins are zero-config — **do not** add anything to AGENTS.md for them: context injection, tool rules, design scanning and the finish gate all come from hooks, and a duplicated rule is a second source of truth (drift is worse than absence)
 
 Requirements: ZCode desktop; hook processes need **Node**; `impeccable`'s design hook uses `sh` from Git Bash on Windows (ZCode's default shell).
 
@@ -126,4 +138,4 @@ PRs welcome. The full walkthrough for adding plugins/skills, the hook output pro
 
 **MIT** — see [LICENSE](LICENSE).
 
-The `impeccable` plugin is vendored from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (**Apache-2.0**, copyright Paul Bakaus and contributors — see [plugins/impeccable/LICENSE](plugins/impeccable/LICENSE) and [NOTICE.md](plugins/impeccable/NOTICE.md)); the adaptation layer on top is MIT, same as this repository.
+The `impeccable` plugin is vendored from [pbakaus/impeccable](https://github.com/pbakaus/impeccable) (**Apache-2.0**, copyright Paul Bakaus and contributors — see [plugins/impeccable/LICENSE](plugins/impeccable/LICENSE) and [NOTICE.md](plugins/impeccable/NOTICE.md)); the `taste-skill` plugin is vendored from [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill) (**MIT**, copyright Leonxlnx — see [plugins/taste-skill/LICENSE](plugins/taste-skill/LICENSE)). The adaptation layers on top are MIT, same as this repository.

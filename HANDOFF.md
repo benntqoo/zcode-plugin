@@ -1020,3 +1020,13 @@ stock 短语 / 无出处 proof-figure / 感叹号）。测试流程、验收口�
 - **调试 skill 复审**（铁律3）：`taste-skill-gate-debug/SKILL.md` 判据与 gate.mjs
   2.5.1 实际行为一致（copy-headings 词表 / text-only 24px / data-edge-free 归属 /
   --p-h 覆盖顺序），未发现需修正项。
+
+## 2026-11-15(第24段)taste-skill 测试复核全绿；ui-ux-pro-max 退役自动触发（拍板）+ README 补录 taste-skill
+
+**测试复核**（查询性质，当轮完成）：`node _audit-plugins.mjs` 0 ERROR（taste-skill 段仅既有裁定 WARN，exit 0）；brief-software `.taste-skill/gate-final.txt` = `GATE: PASS`、gate.json status=pass / waivers=0；钩子三态实证（§23 补记3）仍齐。识别一个易误读点：`taste-skill-test\redesign\` 的 gate.json（11-14 19:28 手动 pass、0 fails）是 vendor 当天冒烟跑，不代表轨二完成——已记入 memory 防销账。
+
+**用户拍板（ui-ux-pro-max 退役）**：impeccable（审/修）+ taste-skill（建站）落地后，用户级 skill `ui-ux-pro-max`（可搜索设计数据库，非本市场件）在建站场景被完全覆盖，且其通用配色/字体推荐恰是 taste-skill 要拦的 slop、弱 description 还占预算与路由。**裁定：禁用自动触发、保留显式调用**（独占场景 = 应用型 UI 的 design-system 选型，两插件不覆盖）。禁用操作用户自己做。推送欠账同轮实查已清零（origin/main=a832487 同步），memory 过期表述已修。
+
+**产出（本段未提交，待拍板）**：README.md / README.en.md 各三处 —— ①插件表补 taste-skill 行（2.5.1；贡献规则本要求表与 plugin.json 同步，属补欠账）②新增 taste-skill 小节 + 两设计插件分工注（含 ui-ux-pro-max 显式调用口径）③License 节补 taste-skill vendor 来源（MIT, Leonxlnx）。账本无新增行（禁用为用户手操，非会话待办）。
+
+**补记1（AGENTS.md 需求判定 + 安装节修正）**：用户问「插件是否需要在 AGENTS.md 加说明」。按 doc-protocol 准入测试逐插件判定：**五个插件只有 skill-forge 需要**（SessionStart matcher 仅 `compact|clear`，正常启动不注入，三条铁律主渠道 = `~/.zcode/AGENTS.md`；plugin README §4 已备可复制全文）；memory-loop / project-guardrails / impeccable / taste-skill 全部钩子自带零配置，不需要——写了即双源漂移。据此改 README 双语安装节：补「仅 skill-forge 有第 4 步」+ 其余四插件显式声明不需要 AGENTS.md；顺手修 skill-forge 小节的错话「装完即生效，无需配置」→「钩子装完即生效；铁律需追加 AGENTS.md 才常驻」。snippet 不复制进根 README（plugin README §4 单一真值；用户全局 AGENTS.md 版本已比它多出多条演化判据，正是双源漂移实证）。
