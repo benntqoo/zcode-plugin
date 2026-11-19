@@ -208,25 +208,26 @@ function checkTelemetry() {
     return;
   }
   const lines = readFileSync(path, "utf-8").trimEnd().split("\n").filter(Boolean);
+  const SUCCESS = new Set(["pass", "context"]); // context 注入也是正常成功事件
   const byOutcome = {};
   const byPlugin = {};
   let bad = 0;
-  const recentErrors = [];
+  const notable = [];
   for (const line of lines) {
     try {
       const r = JSON.parse(line);
       byOutcome[r.outcome] = (byOutcome[r.outcome] ?? 0) + 1;
       byPlugin[r.plugin] = (byPlugin[r.plugin] ?? 0) + 1;
-      if (r.outcome !== "pass" && recentErrors.length < 5) recentErrors.push(line);
+      if (!SUCCESS.has(r.outcome) && notable.length < 5) notable.push(line);
     } catch {
       bad++;
     }
   }
   console.log(`  共 ${lines.length} 条（轮转上限 2000 行/512KB）· 按结果 ${JSON.stringify(byOutcome)} · 按插件 ${JSON.stringify(byPlugin)}`);
   if (bad) console.log(`  ⚠️ ${bad} 行解析失败（不算硬失败，多半是轮转截断）`);
-  if (recentErrors.length) {
-    console.log("  最近非 pass 事件（遥测只报不判，定位要靠夹具与日志）：");
-    for (const l of recentErrors) console.log(`       ${l.slice(0, 160)}`);
+  if (notable.length) {
+    console.log("  最近非常规事件（block / ask / deny 等，只报不判，定位靠夹具与日志）：");
+    for (const l of notable) console.log(`       ${l.slice(0, 160)}`);
   }
 }
 

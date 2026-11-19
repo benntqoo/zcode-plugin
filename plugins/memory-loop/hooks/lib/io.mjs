@@ -8,7 +8,8 @@
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync, writeSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 /** 读 stdin 全部并 JSON.parse。任何失败都返回 {}，绝不抛错。 */
 export async function readStdinAsync() {
@@ -66,11 +67,23 @@ export function emitPermission(decision, reason) {
 // 三条硬约束：同步写（exit 前落盘）、自带轮转（512KB/2000 行）、任何失败绝不影响钩子。
 // 关闭：PLUGIN_TELEMETRY=off（CI 自动关）。
 const T0 = Date.now();
-const TELEMETRY_PLUGIN = (() => {
-  const seg = import.meta.url.split(/[\\/]/);
-  const i = seg.lastIndexOf("plugins");
-  return i >= 0 ? seg[i + 1] : "unknown";
-})();
+const TELEMETRY_PLUGIN = telemetryPluginName(fileURLToPath(import.meta.url));
+
+/**
+ * 从 io 模块路径推插件名：向上找 hooks 目录，再取插件名。
+ * 仓库源（plugins/<名>/hooks/…）hooks 上一级即插件名；
+ * 安装缓存（…/cache/<市场>/<名>/<版>/hooks/…）hooks 上一级是版本号，再上一层才是插件名。
+ * 不能按 "plugins" 路径段找 —— 缓存路径里有 cli\plugins 与 cache\zcode-plugin 两处，
+ * lastIndexOf 会取到 "cache"（2026-11-15~19 实测 4281 条全记错）。
+ */
+export function telemetryPluginName(modulePath) {
+  let dir = dirname(String(modulePath));
+  while (basename(dir) !== "hooks" && dirname(dir) !== dir) dir = dirname(dir);
+  if (basename(dir) !== "hooks") return "unknown";
+  dir = dirname(dir); // 仓库布局=插件名；缓存布局=版本号
+  if (/^\d+(\.\d+)*$/.test(basename(dir))) dir = dirname(dir);
+  return basename(dir);
+}
 
 function recordTelemetry(outcome, event) {
   try {

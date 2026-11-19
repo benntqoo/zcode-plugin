@@ -48,7 +48,7 @@
 |---|---|---|---|---|
 | 🟡 挂起 | impeccable 上游 issue 跟进 | 二十二 | 已提交 [#1470](https://github.com/pbakaus/impeccable/issues/1470)（Open，needs triage）；触发线=上游回复或要求拆分时处理 | 草稿存 [docs/upstream/impeccable-detector-issue-draft-2026-11-14.md](docs/upstream/impeccable-detector-issue-draft-2026-11-14.md) |
 | 🟡 挂起 | taste-skill 轨二（slop 审计/重设计）+ description 自动触发观察 | 二十三 | 触发线=用户想跑轨二，或下次真实建站会话顺带记录是否自动触发（显式触发名已实证 `taste-skill:design-taste-frontend`） | 夹具在 `D:\Code\taste-skill-test\slop-sample.html`；§23 补记3 |
-| ⏳ 验证点 | 三插件 GUI 更新到 sf 1.1.5 / ml 1.0.3 / pg 1.1.4 后，healthcheck 五面应转全绿 | 25 | 过期判据=下轮定时体检仍报 A/B 面红则升级 🔴；证据见 §25 dogfood | 激活态现为 1.1.4/1.0.2/1.1.3（缺遥测与 M1 后续修复） |
+| ⏳ 验证点 | 三插件 GUI 更新到 sf 1.1.6 / ml 1.0.4 / pg 1.1.5 后，healthcheck 转绿且遥测插件名不再出现 "cache" | 26 | 过期判据=下轮定时体检（每 2 天）仍报 A/B 红或 E 面仍见 cache 则升级 🔴；根因与修法见 §26 | 首版 hooks 祖父法差一层（版本号目录），已被新测试抓住修正 |
 
 ---
 
@@ -1058,3 +1058,17 @@ stock 短语 / 无出处 proof-figure / 感叹号）。测试流程、验收口�
 **dogfood 证据（2026-11-15）**：tests 21/21 全绿；`healthcheck --ci` PASS（A/B/C 全绿）；本机全量 healthcheck 现为 **FAIL（3 硬失败）= 预期正确信号**——仓库源已含遥测代码而激活态还在 1.1.4/1.0.2/1.1.3，GUI 更新后即转绿（入账本 ⏳ 验证点）。
 
 **账本对账**：新增 ⏳ 验证点一行（安装态追上新版本）。
+
+## 2026-11-19(第26段)定时体检两轮全绿→按约自动暂停；用户拍板：修遥测命名 + 改两天巡检 + 一起提交
+
+**定时体检结果**：第 1 轮（11-15）五面 PASS（A/B 全绿 = 用户已 GUI 更新 1.1.5/1.0.3/1.1.4，⏳ 行投影归档）；第 2 轮（11-19）五面 PASS → **连续两轮全绿，automation-b49840a1 按约 CronPauseSelf**。E 面顺带观测：4 天 4282 条遥测（~1000 条/天，PreToolUse 高频 pass 为主）、1 次 block（skill-forge 沉淀提醒正常触发）。
+
+**用户拍板三件**：①修遥测命名缺陷 ②定时任务改每 2 天持续观察（不再挂自停条件）③修复后一起提交。
+
+**修复（telemetryPluginName）**：根因 = 安装缓存路径 `…\cli\plugins\cache\zcode-plugin\<名>\<版>\…` 有**两个** `plugins` 段，`lastIndexOf("plugins")` 取到 `cache`（4281/4282 条误名）。修法 = 从 io 模块向上找 `hooks` 目录取插件名；**注意缓存布局 hooks 上一级是版本号**（首版实现差一层被新测试当场抓住），版本号形态（`/^\d+(\.\d+)*$/`）再上提一层。导出为可测 helper，三份拷贝同语义（tests/io-telemetry.test.mjs 4 断言，25/25 全绿）；实跑冒烟已记回 `plugin:"memory-loop"`。**教训**：`lastIndexOf` 按段名找路径元素在有同名段的布局里必翻车；自包含拷贝的纯函数要导出成可测 helper，不可测 = 不可守。healthcheck E 面同步修：`context` 是正常成功事件，不再列进「非常规事件」（SUCCESS = pass+context）。
+
+**产出（本段提交见下）**：三插件 io 库 helper 化 + healthcheck E 面 + tests/io-telemetry.test.mjs + 版本三件套 sf **1.1.6** / ml **1.0.4** / pg **1.1.5**（plugin.json + marketplace + README 双语表）。含第 1 轮遗留：⏳ 行投影（HANDOFF + docs/archive/handoff-ledger-2026-11.md）。
+
+**定时任务重建**：旧任务已暂停且 CronUpdate 改不了启停态 → 删旧建新 `每2天插件健康体检`（09:00，持续观察模式，无自停条件；旧任务历史随删除丢失，两轮全绿记录在本段与归档）。
+
+**账本对账**：新增 ⏳ 验证点一行（GUI 更新到 1.1.6/1.0.4/1.1.5 后 healthcheck 转绿 + 遥测插件名归位）。
